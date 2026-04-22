@@ -1,0 +1,1924 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - CCS Sit-in Monitoring System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; }
+
+        :root {
+            --bg-0: #081325;
+            --bg-1: #0a1d34;
+            --bg-2: #0f2b46;
+            --panel: rgba(255, 255, 255, 0.06);
+            --border: rgba(255, 255, 255, 0.1);
+            --text: #e6edf7;
+            --muted: rgba(230, 237, 247, 0.62);
+            --accent: #2196f3;
+            --accent-2: #57c6ff;
+            --shadow: 0 18px 50px rgba(0, 0, 0, 0.28);
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background:
+                radial-gradient(circle at top left, rgba(33, 150, 243, 0.15), transparent 32%),
+                radial-gradient(circle at bottom right, rgba(124, 58, 237, 0.16), transparent 30%),
+                linear-gradient(135deg, var(--bg-0) 0%, var(--bg-1) 42%, var(--bg-2) 100%);
+            color: var(--text);
+            overflow-x: hidden;
+        }
+
+        .orb-container { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+        .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.28;
+            animation: orbFloat 18s ease-in-out infinite alternate;
+        }
+        .orb-1 { width: 400px; height: 400px; background: #2196F3; top: -8%; left: -7%; }
+        .orb-2 { width: 330px; height: 330px; background: #7c3aed; bottom: -10%; right: -8%; animation-duration: 24s; animation-delay: -5s; }
+        .orb-3 { width: 270px; height: 270px; background: #06b6d4; top: 52%; left: 58%; animation-duration: 22s; animation-delay: -10s; }
+        @keyframes orbFloat {
+            0% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(60px, -35px) scale(1.08); }
+            66% { transform: translate(-30px, 45px) scale(0.96); }
+            100% { transform: translate(15px, -18px) scale(1.03); }
+        }
+
+        .page-wrapper { position: relative; z-index: 1; }
+        .navbar {
+            background: rgba(15, 34, 60, 0.72);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+        .navbar-brand { color: #fff !important; font-size: 1rem; font-weight: 600; }
+        .nav-link { color: rgba(255,255,255,0.8) !important; }
+        .nav-link:hover, .nav-link.active { color: #fff !important; }
+
+        .dashboard-shell { padding: 26px 20px 42px; }
+        .section-panel { display: none; animation: panelIn 0.3s ease both; }
+        .section-panel.active { display: block; }
+        @keyframes panelIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+
+        .glass-card {
+            background: var(--panel);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            box-shadow: var(--shadow);
+        }
+
+        .hero-card { padding: 24px; }
+        .hero-title { font-size: clamp(1.8rem, 3vw, 2.6rem); font-weight: 800; }
+        .hero-subtitle { color: var(--muted); margin-bottom: 22px; }
+
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; }
+        .stat-box {
+            padding: 18px 16px;
+            border-radius: 14px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+        .stat-number { font-size: 1.8rem; font-weight: 800; color: #8fd0ff; line-height: 1.1; }
+        .stat-label { color: rgba(255,255,255,0.58); font-size: 0.83rem; text-transform: uppercase; letter-spacing: 0.06em; }
+
+        .content-grid { margin-top: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .content-card { padding: 22px; }
+        .section-title { font-size: 1.03rem; font-weight: 700; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+        .section-title i { color: #8fd0ff; }
+        .leaderboard-layout { margin-top: 20px; display: grid; grid-template-columns: 1.25fr 0.95fr; gap: 20px; align-items: start; }
+        .leaderboard-column { display: flex; flex-direction: column; gap: 20px; }
+
+        .btn-primary-gradient {
+            border: none;
+            color: #fff;
+            border-radius: 12px;
+            font-weight: 600;
+            padding: 10px 16px;
+            background: linear-gradient(135deg, #2196f3, #1976d2);
+            box-shadow: 0 8px 26px rgba(33, 150, 243, 0.28);
+        }
+        .btn-primary-gradient:hover { color: #fff; transform: translateY(-1px); }
+        .btn-outline-soft {
+            border: 1px solid rgba(255,255,255,0.16);
+            color: var(--text);
+            border-radius: 12px;
+            background: rgba(255,255,255,0.04);
+        }
+        .btn-outline-soft:hover { color: #fff; background: rgba(255,255,255,0.09); }
+
+        .form-label { color: rgba(255,255,255,0.68); font-size: 0.86rem; margin-bottom: 6px; }
+        .form-control, .form-select {
+            background: rgba(255,255,255,0.07);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 12px;
+            color: #fff;
+            padding: 10px 12px;
+        }
+        .form-control::placeholder { color: rgba(255,255,255,0.34); }
+        .form-control:focus, .form-select:focus {
+            border-color: rgba(33,150,243,0.5);
+            background: rgba(255,255,255,0.1);
+            box-shadow: 0 0 0 3px rgba(33,150,243,0.14);
+            color: #fff;
+        }
+        .form-select option { background: #10263d; color: #fff; }
+
+        .table-dark-surface {
+            --bs-table-bg: transparent;
+            --bs-table-color: rgba(255,255,255,0.86);
+            --bs-table-border-color: rgba(255,255,255,0.08);
+            margin-bottom: 0;
+        }
+        .table-dark-surface thead th {
+            color: #cfe8ff;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            border-bottom: 1px solid rgba(255,255,255,0.12);
+            white-space: nowrap;
+        }
+
+        .toast-container-custom {
+            position: fixed;
+            top: 70px;
+            right: 18px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .toast-notif {
+            padding: 12px 16px;
+            border-radius: 12px;
+            color: #fff;
+            font-size: 0.92rem;
+            min-width: 280px;
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,0.1);
+            animation: toastIn 0.35s ease both;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .toast-notif.success { background: rgba(22,163,74,0.85); }
+        .toast-notif.error { background: rgba(220,38,38,0.85); }
+        .toast-notif.warning { background: rgba(234,179,8,0.85); color: #1a1a1a; }
+        @keyframes toastIn { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes toastOut { to { opacity: 0; transform: translateX(30px); } }
+
+        .empty-note { color: var(--muted); font-size: 0.9rem; }
+        .announcement-feed {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            max-height: 540px;
+            overflow: auto;
+            padding-right: 8px;
+        }
+        .announcement-feed-item {
+            padding: 14px 16px;
+            border-radius: 14px;
+            background: rgba(255,255,255,0.045);
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+        .announcement-feed-item .announcement-head {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 8px;
+            color: #d7ebff;
+            font-size: 0.82rem;
+        }
+        .announcement-feed-item .announcement-title {
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+        .announcement-feed-item .announcement-body {
+            color: rgba(255,255,255,0.82);
+            line-height: 1.65;
+            font-size: 0.94rem;
+        }
+        .feedback-feed {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            max-height: 540px;
+            overflow: auto;
+            padding-right: 8px;
+        }
+        .feedback-feed-item {
+            padding: 14px 16px;
+            border-radius: 14px;
+            background: rgba(255,255,255,0.045);
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+        .feedback-feed-item .feedback-head {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 8px;
+            color: #d7ebff;
+            font-size: 0.82rem;
+        }
+        .feedback-feed-item .feedback-subject {
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+        .feedback-feed-item .feedback-body {
+            color: rgba(255,255,255,0.82);
+            line-height: 1.65;
+            font-size: 0.94rem;
+        }
+
+        @media (max-width: 991px) {
+            .stats-grid { grid-template-columns: 1fr; }
+            .content-grid { grid-template-columns: 1fr; }
+            .leaderboard-layout { grid-template-columns: 1fr; }
+        }
+
+        /* Professional Light Theme Override */
+        :root {
+            --surface-bg: #f7f6fb;
+            --surface-card: #ffffff;
+            --surface-border: #e6e1f3;
+            --text-primary: #1f1b2d;
+            --text-muted: #6a637d;
+            --brand-primary: #2b124c;
+            --brand-primary-hover: #1f0d37;
+            --brand-soft: #efe9fb;
+            --brand-yellow: #edb42f;
+            --brand-yellow-hover: #d9a224;
+            --panel: #ffffff;
+            --border: #e6e1f3;
+            --text: #1f1b2d;
+            --muted: #6a637d;
+            --accent: #5e3aa1;
+            --accent-2: #7a54bc;
+            --shadow: 0 10px 24px rgba(44, 31, 79, 0.08);
+        }
+
+        body {
+            background: radial-gradient(circle at top right, #f6f1ff 0%, rgba(246, 241, 255, 0) 45%), #f7f6fb;
+            color: var(--text-primary);
+        }
+        .orb-container { display: none; }
+        .navbar {
+            background: var(--brand-primary);
+            border-bottom: 1px solid #3b1a63;
+            backdrop-filter: none;
+            -webkit-backdrop-filter: none;
+            box-shadow: 0 10px 24px rgba(43, 18, 76, 0.28);
+        }
+        .navbar-brand,
+        .nav-link,
+        .nav-link:hover,
+        .nav-link.active { color: #ffffff !important; }
+
+        .glass-card,
+        .content-card,
+        .hero-card {
+            background: #ffffff;
+            border: 1px solid var(--surface-border);
+            box-shadow: var(--shadow);
+            backdrop-filter: none;
+            -webkit-backdrop-filter: none;
+        }
+
+        .hero-title,
+        .section-title,
+        .announcement-feed-item .announcement-title,
+        .feedback-feed-item .feedback-subject {
+            color: var(--text-primary);
+        }
+        .hero-subtitle,
+        .empty-note,
+        .form-label,
+        .stat-label,
+        .section-title i,
+        .announcement-feed-item .announcement-head,
+        .feedback-feed-item .feedback-head {
+            color: var(--text-muted) !important;
+        }
+        .stat-box {
+            background: #faf8ff;
+            border: 1px solid #e5dcf5;
+        }
+        .stat-number { color: var(--brand-primary); }
+
+        .btn-primary-gradient {
+            background: var(--brand-yellow);
+            border: 1px solid var(--brand-yellow);
+            color: #2b124c;
+            box-shadow: 0 8px 18px rgba(237, 180, 47, 0.3);
+        }
+        .btn-primary-gradient:hover {
+            background: var(--brand-yellow-hover);
+            border-color: var(--brand-yellow-hover);
+            color: #1f0d37;
+        }
+        .btn-outline-soft {
+            background: #fff9e8;
+            border: 1px solid #e3ca88;
+            color: #2b124c;
+        }
+        .btn-outline-soft:hover {
+            background: #fdf1cf;
+            border-color: #e0bb5a;
+            color: #1f0d37;
+        }
+
+        .btn-success,
+        .btn.btn-success {
+            background: var(--brand-yellow);
+            border-color: var(--brand-yellow);
+            color: #2b124c;
+        }
+        .btn-success:hover,
+        .btn.btn-success:hover {
+            background: var(--brand-yellow-hover);
+            border-color: var(--brand-yellow-hover);
+            color: #1f0d37;
+        }
+
+        .form-control,
+        .form-select {
+            background: #ffffff;
+            border: 1px solid #d8d0e9;
+            color: var(--text-primary);
+        }
+        .form-control::placeholder { color: #a097b6; }
+        .form-control:focus,
+        .form-select:focus {
+            border-color: #bca8e3;
+            box-shadow: 0 0 0 3px rgba(94, 58, 161, 0.12);
+            color: var(--text-primary);
+            background: #ffffff;
+        }
+        .form-select option { background: #ffffff; color: var(--text-primary); }
+
+        .announcement-feed-item,
+        .feedback-feed-item {
+            background: #ffffff;
+            border: 1px solid var(--surface-border);
+        }
+        .announcement-feed-item .announcement-body,
+        .feedback-feed-item .feedback-body {
+            color: var(--text-primary);
+        }
+
+        .table-dark-surface,
+        .table-dark-surface thead th {
+            --bs-table-bg: #ffffff;
+            --bs-table-color: #1f1b2d;
+            --bs-table-border-color: #e6e1f3;
+            color: #1f1b2d;
+        }
+        .table-dark-surface td,
+        .table-dark-surface th,
+        .text-white,
+        .text-light,
+        .text-white-50,
+        .text-muted {
+            color: #1f1b2d !important;
+        }
+
+        .toast-notif {
+            background: #ffffff;
+            border: 1px solid var(--surface-border);
+            color: var(--text-primary);
+            box-shadow: 0 10px 24px rgba(44, 31, 79, 0.12);
+        }
+        .toast-notif.success { border-left: 4px solid #2e7d32; }
+        .toast-notif.error { border-left: 4px solid #c62828; }
+        .toast-notif.warning {
+            border-left: 4px solid var(--brand-yellow);
+            color: var(--text-primary);
+        }
+    </style>
+</head>
+<body>
+    <div class="orb-container">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+
+    <div class="page-wrapper">
+        <nav class="navbar navbar-expand-lg navbar-dark">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="index.html"><i class="bi bi-mortarboard-fill me-2"></i>CCS Sit-in Monitoring</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"><span class="navbar-toggler-icon"></span></button>
+                <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+                    <ul class="navbar-nav align-items-lg-center gap-lg-1">
+                        <li class="nav-item"><a class="nav-link active" href="#" data-section="dashboard"><i class="bi bi-speedometer2 me-1"></i>Dashboard</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#" data-section="announcements"><i class="bi bi-megaphone me-1"></i>Announcements</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#" data-section="feedback"><i class="bi bi-chat-left-text me-1"></i>Feedback</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#" data-section="search"><i class="bi bi-search me-1"></i>Search</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#" data-section="sitin-form"><i class="bi bi-ui-checks-grid me-1"></i>Sit-in Form</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#" data-section="students"><i class="bi bi-people me-1"></i>Student List</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#" data-section="reservations"><i class="bi bi-inbox me-1"></i>Reservations</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#" data-section="records"><i class="bi bi-journal-text me-1"></i>Current Sit-in</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#" data-section="history"><i class="bi bi-clock-history me-1"></i>Session History</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#" data-section="analytics"><i class="bi bi-graph-up me-1"></i>Analytics</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#" data-section="reports"><i class="bi bi-file-earmark-text me-1"></i>Reports</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#" data-section="rewards"><i class="bi bi-trophy me-1"></i>Leaderboard</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#" id="logoutLink"><i class="bi bi-box-arrow-right me-1"></i>Logout</a></li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+
+        <div class="toast-container-custom" id="toastContainer"></div>
+
+        <main class="dashboard-shell container-fluid">
+            <section class="section-panel active" data-panel="dashboard">
+                <div class="glass-card hero-card">
+                    <h1 class="hero-title mb-2">Admin Dashboard</h1>
+                    <p class="hero-subtitle">Monitor student registration, current sit-in sessions, and reward points earned from completed work.</p>
+                    <div class="stats-grid">
+                        <div class="stat-box">
+                            <div class="stat-number" id="registeredCount">0</div>
+                            <div class="stat-label">Students Registered</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-number" id="currentCount">0</div>
+                            <div class="stat-label">Currently Sit-in</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-number" id="totalSitinCount">0</div>
+                            <div class="stat-label">Total Sit-in</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-number" id="pendingReservationCount">0</div>
+                            <div class="stat-label">Pending Reservations</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-number" id="totalRewardPoints">0</div>
+                            <div class="stat-label">Reward Points</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="content-grid">
+                    <div class="glass-card content-card">
+                        <div class="section-title"><i class="bi bi-pie-chart"></i>Language Usage</div>
+                        <canvas id="languagePieChart" height="230"></canvas>
+                    </div>
+                    <div class="glass-card content-card">
+                        <div class="section-title"><i class="bi bi-lightning-charge"></i>Quick Actions</div>
+                        <div class="d-flex flex-wrap gap-2 mb-3">
+                            <button class="btn btn-primary-gradient" data-section-jump="search"><i class="bi bi-search me-1"></i>Search Student</button>
+                            <button class="btn btn-outline-soft" data-section-jump="sitin-form"><i class="bi bi-ui-checks-grid me-1"></i>Open Sit-in Form</button>
+                        </div>
+                        <div class="empty-note">Use Search to find registered students, then open the sit-in form and submit a session.</div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section-panel" data-panel="announcements">
+                <div class="content-grid">
+                    <div class="glass-card content-card">
+                        <div class="section-title mb-3"><i class="bi bi-megaphone"></i>Post Announcement</div>
+                        <form id="announcementForm" class="row g-3" novalidate>
+                            <div class="col-12">
+                                <label class="form-label" for="announcementTitle">Title</label>
+                                <input type="text" id="announcementTitle" class="form-control" placeholder="Enter announcement title" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label" for="announcementAudience">Audience</label>
+                                <select id="announcementAudience" class="form-select">
+                                    <option value="student">Students</option>
+                                    <option value="admin">Admins</option>
+                                    <option value="all">Everyone</option>
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label" for="announcementBody">Message</label>
+                                <textarea id="announcementBody" class="form-control" rows="6" placeholder="Write the announcement message here" required></textarea>
+                            </div>
+                            <div class="col-12 d-flex flex-wrap gap-2">
+                                <button type="submit" class="btn btn-primary-gradient"><i class="bi bi-send me-1"></i>Post Announcement</button>
+                                <button type="button" id="refreshAnnouncementsBtn" class="btn btn-outline-soft"><i class="bi bi-arrow-clockwise me-1"></i>Refresh List</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="glass-card content-card">
+                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                            <div class="section-title mb-0"><i class="bi bi-list-ul"></i>Recent Announcements</div>
+                        </div>
+                        <div class="announcement-feed" id="adminAnnouncementList">
+                            <div class="empty-note">Loading announcements...</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section-panel" data-panel="feedback">
+                <div class="content-grid">
+                    <div class="glass-card content-card">
+                        <div class="section-title mb-3"><i class="bi bi-chat-left-text"></i>Feedback Inbox</div>
+                        <div class="feedback-feed" id="adminFeedbackList">
+                            <div class="empty-note">Loading feedback...</div>
+                        </div>
+                    </div>
+
+                    <div class="glass-card content-card">
+                        <div class="section-title mb-3"><i class="bi bi-check2-square"></i>Review Notes</div>
+                        <div class="empty-note mb-3">Use the reviewed button to mark items you have already handled.</div>
+                        <div class="empty-note">New feedback entries appear here in reverse chronological order.</div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section-panel" data-panel="search">
+                <div class="glass-card content-card">
+                    <div class="section-title"><i class="bi bi-search"></i>Search Registered Students</div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-8">
+                            <input type="text" id="searchInput" class="form-control" placeholder="Search ID number, name, email, or course...">
+                        </div>
+                        <div class="col-md-4 d-grid">
+                            <button id="searchBtn" class="btn btn-primary-gradient"><i class="bi bi-search me-1"></i>Search</button>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-dark-surface align-middle">
+                            <thead>
+                                <tr>
+                                    <th>ID Number</th>
+                                    <th>Name</th>
+                                    <th>Course</th>
+                                    <th>Year</th>
+                                    <th>Email</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="searchBody">
+                                <tr><td colspan="6" class="text-center py-4 text-white-50">Search for registered students.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section-panel" data-panel="sitin-form">
+                <div class="glass-card content-card">
+                    <div class="section-title"><i class="bi bi-ui-checks-grid"></i>Sit-in Form</div>
+                    <form id="sitinForm" class="row g-3" novalidate>
+                        <div class="col-md-4">
+                            <label class="form-label" for="formIdNumber">ID Number</label>
+                            <input type="text" id="formIdNumber" class="form-control" placeholder="Select/search a student" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label" for="formStudentName">Student Name</label>
+                            <input type="text" id="formStudentName" class="form-control" readonly>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label" for="formRemaining">Remaining Session</label>
+                            <input type="number" id="formRemaining" class="form-control" value="30" readonly>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label" for="formLab">Sit Lab</label>
+                            <select id="formLab" class="form-select" required>
+                                <option value="">Select a lab</option>
+                                <option value="S1">S1</option>
+                                <option value="S2">S2</option>
+                                <option value="S3">S3</option>
+                                <option value="S4">S4</option>
+                                <option value="S5">S5</option>
+                                <option value="S6">S6</option>
+                                <option value="S7">S7</option>
+                                <option value="S8">S8</option>
+                                <option value="S9">S9</option>
+                                <option value="S10">S10</option>
+                                <option value="S11">S11</option>
+                                <option value="S12">S12</option>
+                                <option value="S13">S13</option>
+                                <option value="S14">S14</option>
+                                <option value="S15">S15</option>
+                                <option value="S16">S16</option>
+                                <option value="S17">S17</option>
+                                <option value="S18">S18</option>
+                                <option value="S19">S19</option>
+                                <option value="S20">S20</option>
+                                <option value="S21">S21</option>
+                                <option value="S22">S22</option>
+                                <option value="S23">S23</option>
+                                <option value="S24">S24</option>
+                                <option value="S25">S25</option>
+                                <option value="S26">S26</option>
+                                <option value="S27">S27</option>
+                                <option value="S28">S28</option>
+                                <option value="S29">S29</option>
+                                <option value="S30">S30</option>
+                                <option value="S31">S31</option>
+                                <option value="S32">S32</option>
+                                <option value="S33">S33</option>
+                                <option value="S34">S34</option>
+                                <option value="S35">S35</option>
+                                <option value="S36">S36</option>
+                                <option value="S37">S37</option>
+                                <option value="S38">S38</option>
+                                <option value="S39">S39</option>
+                                <option value="S40">S40</option>
+                                <option value="S41">S41</option>
+                                <option value="S42">S42</option>
+                                <option value="S43">S43</option>
+                                <option value="S44">S44</option>
+                                <option value="S45">S45</option>
+                                <option value="S46">S46</option>
+                                <option value="S47">S47</option>
+                                <option value="S48">S48</option>
+                                <option value="S49">S49</option>
+                                <option value="S50">S50</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label" for="formPurpose">Purpose / Language</label>
+                            <select id="formPurpose" class="form-select" required>
+                                <option value="">Select language/use</option>
+                                <option value="C Programming">C Programming</option>
+                                <option value="Java">Java</option>
+                                <option value="Python">Python</option>
+                                <option value="Web Development">Web Development</option>
+                                <option value="Database">Database</option>
+                                <option value="Other">Other</option>
+                            </select>
+                            <div class="small-note mt-2">The selected language/use will be stored in the sit-in record.</div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label" for="formPurposeCustom">Custom Note (optional)</label>
+                            <input type="text" id="formPurposeCustom" class="form-control" placeholder="e.g. Data Structures Lab">
+                        </div>
+                        <div class="col-12 d-flex flex-wrap gap-2">
+                            <button type="submit" class="btn btn-primary-gradient"><i class="bi bi-check2-circle me-1"></i>Save Sit-in</button>
+                            <button type="button" id="clearFormBtn" class="btn btn-outline-soft"><i class="bi bi-arrow-counterclockwise me-1"></i>Clear</button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            <section class="section-panel" data-panel="students">
+                <div class="glass-card content-card">
+                    <div class="section-title"><i class="bi bi-people"></i>Students Information</div>
+                    <div class="table-responsive">
+                        <table class="table table-dark-surface align-middle">
+                            <thead>
+                                <tr>
+                                    <th>ID Number</th>
+                                    <th>Name</th>
+                                    <th>Course</th>
+                                    <th>Year</th>
+                                    <th>Email</th>
+                                    <th>Address</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="studentsBody">
+                                <tr><td colspan="7" class="text-center py-4 text-white-50">Loading students...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section-panel" data-panel="records">
+                <div class="glass-card content-card">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+                        <div class="section-title mb-0"><i class="bi bi-journal-text"></i>Current Sit-in Records</div>
+                        <button id="refreshRecordsBtn" class="btn btn-outline-soft btn-sm"><i class="bi bi-arrow-clockwise me-1"></i>Refresh</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-dark-surface align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Sit ID</th>
+                                    <th>ID Number</th>
+                                    <th>Name</th>
+                                    <th>Purpose</th>
+                                    <th>Lab</th>
+                                    <th>Duration</th>
+                                    <th>Remaining</th>
+                                    <th>Time In</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recordsBody">
+                                <tr><td colspan="8" class="text-center py-4 text-white-50">No current sit-in records.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section-panel" data-panel="reservations">
+                <div class="glass-card content-card">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+                        <div class="section-title mb-0"><i class="bi bi-inbox"></i>Reservation Inbox</div>
+                        <button id="refreshReservationsBtn" class="btn btn-outline-soft btn-sm"><i class="bi bi-arrow-clockwise me-1"></i>Refresh</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-dark-surface align-middle">
+                            <thead>
+                                <tr>
+                                    <th>ID Number</th>
+                                    <th>Name</th>
+                                    <th>Lab</th>
+                                    <th>Purpose</th>
+                                    <th>Preferred Date</th>
+                                    <th>Preferred Time</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reservationsBody">
+                                <tr><td colspan="8" class="text-center py-4 text-white-50">No reservation requests yet.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section-panel" data-panel="history">
+                <div class="glass-card content-card">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+                        <div class="section-title mb-0"><i class="bi bi-clock-history"></i>Session History</div>
+                        <button id="refreshHistoryBtn" class="btn btn-outline-soft btn-sm"><i class="bi bi-arrow-clockwise me-1"></i>Refresh</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-dark-surface align-middle">
+                            <thead>
+                                <tr>
+                                    <th>ID Number</th>
+                                    <th>Name</th>
+                                    <th>Purpose</th>
+                                    <th>Lab</th>
+                                    <th>Time In</th>
+                                    <th>Duration</th>
+                                    <th>Time Out</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="historyBodyAdmin">
+                                <tr><td colspan="8" class="text-center py-4 text-white-50">No session history available yet.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section-panel" data-panel="analytics">
+                <div class="content-grid">
+                    <div class="glass-card content-card">
+                        <div class="section-title"><i class="bi bi-pie-chart"></i>Reservation Status Analytics</div>
+                        <canvas id="reservationStatusChart" height="240"></canvas>
+                    </div>
+                    <div class="glass-card content-card">
+                        <div class="section-title"><i class="bi bi-bar-chart"></i>Leaderboard Analytics</div>
+                        <canvas id="leaderboardChart" height="240"></canvas>
+                    </div>
+                </div>
+
+                <div class="content-grid mt-4">
+                    <div class="glass-card content-card">
+                        <div class="section-title"><i class="bi bi-activity"></i>Dashboard Highlights</div>
+                        <div class="stats-grid">
+                            <div class="stat-box"><div class="stat-number" id="analyticsStudents">0</div><div class="stat-label">Students</div></div>
+                            <div class="stat-box"><div class="stat-number" id="analyticsActive">0</div><div class="stat-label">Active Sessions</div></div>
+                            <div class="stat-box"><div class="stat-number" id="analyticsPending">0</div><div class="stat-label">Pending Reservations</div></div>
+                            <div class="stat-box"><div class="stat-number" id="analyticsRewards">0</div><div class="stat-label">Reward Points</div></div>
+                        </div>
+                    </div>
+                    <div class="glass-card content-card">
+                        <div class="section-title"><i class="bi bi-lightbulb"></i>Analytics Notes</div>
+                        <ul class="rules-list ps-3 mb-0">
+                            <li>Reservation status is grouped from the live reservation queue.</li>
+                            <li>Leaderboard ranking reflects the 50/30/20 weighting already used by the system.</li>
+                            <li>Use the reports tab to export the same data for submission or review.</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section-panel" data-panel="reports">
+                <div class="content-grid">
+                    <div class="glass-card content-card">
+                        <div class="section-title"><i class="bi bi-file-earmark-arrow-down"></i>Generate Reports</div>
+                        <div class="empty-note mb-3">Export the current dashboard data as CSV files.</div>
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-primary-gradient" id="downloadStudentsReportBtn"><i class="bi bi-people me-1"></i>Download Student Report</button>
+                            <button class="btn btn-outline-soft" id="downloadReservationsReportBtn"><i class="bi bi-inbox me-1"></i>Download Reservation Report</button>
+                            <button class="btn btn-outline-soft" id="downloadHistoryReportBtn"><i class="bi bi-clock-history me-1"></i>Download Session History Report</button>
+                            <button class="btn btn-outline-soft" id="downloadLeaderboardReportBtn"><i class="bi bi-trophy me-1"></i>Download Leaderboard Report</button>
+                        </div>
+                    </div>
+                    <div class="glass-card content-card">
+                        <div class="section-title"><i class="bi bi-journal-check"></i>Report Notes</div>
+                        <ul class="rules-list ps-3 mb-0">
+                            <li>Reports use the data already loaded in the admin dashboard.</li>
+                            <li>CSV exports can be opened directly in Excel or Google Sheets.</li>
+                            <li>Leaderboard exports include the weighted score breakdown.</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section-panel" data-panel="rewards">
+                <div class="leaderboard-layout">
+                    <div class="leaderboard-column">
+                        <div class="glass-card content-card">
+                            <div class="section-title"><i class="bi bi-trophy"></i>Leaderboard</div>
+                            <div class="empty-note mb-3">Ranking uses 50% earned points, 30% total sit-in hours, and 20% task completion.</div>
+                            <div class="table-responsive">
+                                <table class="table table-dark-surface align-middle">
+                                    <thead>
+                                        <tr>
+                                            <th>Rank</th>
+                                            <th>Student</th>
+                                            <th>Points</th>
+                                            <th>Hours</th>
+                                            <th>Tasks</th>
+                                            <th>Score</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="leaderboardBody">
+                                        <tr><td colspan="6" class="text-center py-4 text-white-50">Loading leaderboard...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="glass-card content-card">
+                            <div class="section-title"><i class="bi bi-gift"></i>Award Reward Points</div>
+                            <form id="rewardForm" class="row g-3" novalidate>
+                                <div class="col-12">
+                                    <label class="form-label" for="rewardIdNumber">ID Number</label>
+                                    <input type="text" id="rewardIdNumber" class="form-control" placeholder="Enter student ID number" required>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label" for="rewardPoints">Points</label>
+                                    <input type="number" id="rewardPoints" class="form-control" min="1" value="1" required>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label" for="rewardDescription">Description</label>
+                                    <textarea id="rewardDescription" class="form-control" rows="4" placeholder="Reason for awarding points" required></textarea>
+                                </div>
+                                <div class="col-12 d-flex flex-wrap gap-2">
+                                    <button type="submit" class="btn btn-primary-gradient"><i class="bi bi-check2-circle me-1"></i>Award Points</button>
+                                    <button type="button" class="btn btn-outline-soft" id="clearRewardFormBtn"><i class="bi bi-arrow-counterclockwise me-1"></i>Clear</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div class="leaderboard-column">
+                        <div class="glass-card content-card">
+                            <div class="section-title"><i class="bi bi-lightbulb"></i>Scoring Breakdown</div>
+                            <div class="small-note mb-3">This matches the percentages from the sketch.</div>
+                            <div class="d-grid gap-3">
+                                <div>
+                                    <div class="d-flex justify-content-between small mb-1"><span>Earned Points</span><span>50%</span></div>
+                                    <div class="progress" style="height: 10px; background: rgba(255,255,255,0.08);"><div class="progress-bar" style="width: 50%; background: linear-gradient(135deg, #2196f3, #57c6ff);"></div></div>
+                                </div>
+                                <div>
+                                    <div class="d-flex justify-content-between small mb-1"><span>Total Sit-in Hours</span><span>30%</span></div>
+                                    <div class="progress" style="height: 10px; background: rgba(255,255,255,0.08);"><div class="progress-bar" style="width: 30%; background: linear-gradient(135deg, #7c3aed, #a78bfa);"></div></div>
+                                </div>
+                                <div>
+                                    <div class="d-flex justify-content-between small mb-1"><span>Task Completed</span><span>20%</span></div>
+                                    <div class="progress" style="height: 10px; background: rgba(255,255,255,0.08);"><div class="progress-bar" style="width: 20%; background: linear-gradient(135deg, #16a34a, #4ade80);"></div></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="glass-card content-card">
+                            <div class="section-title"><i class="bi bi-bar-chart-fill"></i>Leaderboard Bar Graph</div>
+                            <div class="empty-note mb-3">Different colors show points, hours, and tasks contributions for the top five students.</div>
+                            <div style="height: 320px;">
+                                <canvas id="leaderboardSectionChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-card content-card mt-4">
+                    <div class="section-title"><i class="bi bi-clock-history"></i>Reward History</div>
+                    <div class="table-responsive">
+                        <table class="table table-dark-surface align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Student</th>
+                                    <th>Type</th>
+                                    <th>Description</th>
+                                    <th>Points</th>
+                                </tr>
+                            </thead>
+                            <tbody id="rewardHistoryBody">
+                                <tr><td colspan="5" class="text-center py-4 text-white-50">Loading reward history...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const API_BASE = 'backend/api/index.php';
+        const USER_KEY = 'ccs_user';
+        let languageChart = null;
+        let reservationStatusChart = null;
+        let leaderboardChart = null;
+        let leaderboardSectionChart = null;
+        let studentCache = [];
+        let reservationCache = [];
+        let announcementCache = [];
+        let feedbackCache = [];
+        let adminHistoryCache = [];
+        let rewardHistoryCache = [];
+        let adminLeaderboardCache = [];
+
+        const userRaw = localStorage.getItem(USER_KEY);
+        if (!userRaw) {
+            window.location.href = 'login.html';
+        }
+        const user = userRaw ? JSON.parse(userRaw) : null;
+        if (user && user.role !== 'admin') {
+            window.location.href = 'dashboard.html';
+        }
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const icons = { success: 'bi-check-circle-fill', error: 'bi-x-circle-fill', warning: 'bi-exclamation-triangle-fill' };
+            const toast = document.createElement('div');
+            toast.className = `toast-notif ${type}`;
+            toast.innerHTML = `<i class="bi ${icons[type] || icons.success}"></i><span>${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.animation = 'toastOut 0.3s forwards';
+                setTimeout(() => toast.remove(), 300);
+            }, 3200);
+        }
+
+        function setActiveSection(sectionName) {
+            document.querySelectorAll('.section-panel').forEach(panel => {
+                panel.classList.toggle('active', panel.dataset.panel === sectionName);
+            });
+            document.querySelectorAll('[data-section]').forEach(link => {
+                link.classList.toggle('active', link.dataset.section === sectionName);
+            });
+        }
+
+        async function apiGet(action, query = '') {
+            const url = `${API_BASE}?action=${encodeURIComponent(action)}${query ? `&${query}` : ''}`;
+            const res = await fetch(url);
+            return await res.json();
+        }
+
+        async function apiPost(action, payload) {
+            const res = await fetch(`${API_BASE}?action=${encodeURIComponent(action)}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            return await res.json();
+        }
+
+        function renderLanguageChart(data) {
+            const labels = Object.keys(data || {});
+            const values = Object.values(data || {});
+            const ctx = document.getElementById('languagePieChart');
+            if (!ctx) return;
+            if (languageChart) languageChart.destroy();
+            languageChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels,
+                    datasets: [{
+                        data: values,
+                        backgroundColor: ['#2196f3', '#57c6ff', '#7c3aed', '#f97316', '#f43f5e', '#fbbf24'],
+                        borderColor: '#0f2b46',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    plugins: {
+                        legend: { labels: { color: '#e6edf7' } }
+                    }
+                }
+            });
+        }
+
+        function renderSearchStudents(students) {
+            const tbody = document.getElementById('searchBody');
+            if (!students.length) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-white-50">No student found.</td></tr>';
+                return;
+            }
+            tbody.innerHTML = students.map(student => {
+                const fullName = [student.first_name, student.middle_name, student.last_name].filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
+                return `
+                    <tr>
+                        <td>${student.id_number}</td>
+                        <td>${fullName}</td>
+                        <td>${student.course}</td>
+                        <td>${student.year_level}</td>
+                        <td>${student.email || '-'}</td>
+                        <td class="d-flex flex-wrap gap-2">
+                            <button class="btn btn-primary-gradient btn-sm" data-use-student="${student.id}"><i class="bi bi-plus-circle me-1"></i> Sit-in</button>
+                            <button class="btn btn-outline-soft btn-sm" data-reset-sessions="${student.id}" data-id-number="${student.id_number}"><i class="bi bi-arrow-counterclockwise me-1"></i>Reset</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function renderStudentsList(students) {
+            const tbody = document.getElementById('studentsBody');
+            if (!students.length) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-white-50">No registered students found.</td></tr>';
+                return;
+            }
+            tbody.innerHTML = students.map(student => {
+                const fullName = [student.first_name, student.middle_name, student.last_name].filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
+                return `
+                    <tr>
+                        <td>${student.id_number}</td>
+                        <td>${fullName}</td>
+                        <td>${student.course}</td>
+                        <td>${student.year_level}</td>
+                        <td>${student.email || '-'}</td>
+                        <td>${student.address || '-'}</td>
+                        <td class="d-flex flex-wrap gap-2">
+                            <button class="btn btn-outline-soft btn-sm" data-use-student="${student.id}"><i class="bi bi-ui-checks-grid me-1"></i>Sit-in</button>
+                            <button class="btn btn-outline-soft btn-sm" data-reset-sessions="${student.id}" data-id-number="${student.id_number}"><i class="bi bi-arrow-counterclockwise me-1"></i>Reset</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function renderCurrentRecords(records) {
+            const tbody = document.getElementById('recordsBody');
+            if (!records.length) {
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-white-50">No current sit-in records.</td></tr>';
+                return;
+            }
+            tbody.innerHTML = records.map(record => `
+                <tr>
+                    <td>${record.id}</td>
+                    <td>${record.id_number}</td>
+                    <td>${record.first_name} ${record.last_name}</td>
+                    <td>${record.purpose}</td>
+                    <td>${record.lab_room}</td>
+                    <td>${record.elapsed_time || '-'}</td>
+                    <td>${record.remaining_sessions}</td>
+                    <td>${new Date(record.time_in).toLocaleString()}</td>
+                    <td><button class="btn btn-danger btn-sm" data-end-session="${record.id}"><i class="bi bi-stop-circle me-1"></i>End</button></td>
+                </tr>
+            `).join('');
+        }
+
+        function renderReservations(reservations) {
+            const tbody = document.getElementById('reservationsBody');
+            if (!reservations.length) {
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-white-50">No reservation requests yet.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = reservations.map(reservation => {
+                const fullName = [reservation.first_name, reservation.last_name].filter(Boolean).join(' ').trim();
+                const statusBadge = reservation.status === 'approved'
+                    ? '<span class="badge text-bg-success">Approved</span>'
+                    : reservation.status === 'rejected'
+                        ? '<span class="badge text-bg-danger">Rejected</span>'
+                        : '<span class="badge text-bg-warning">Pending</span>';
+
+                const actionButtons = reservation.status === 'pending'
+                    ? `
+                        <button class="btn btn-success btn-sm me-1" data-approve-reservation="${reservation.id}"><i class="bi bi-check-lg me-1"></i>Approve</button>
+                        <button class="btn btn-outline-soft btn-sm" data-reject-reservation="${reservation.id}"><i class="bi bi-x-lg me-1"></i>Reject</button>
+                    `
+                    : '-';
+
+                return `
+                    <tr>
+                        <td>${reservation.id_number}</td>
+                        <td>${fullName}</td>
+                        <td>${reservation.lab_room}</td>
+                        <td>${reservation.purpose}</td>
+                        <td>${reservation.preferred_date || '-'}</td>
+                        <td>${reservation.preferred_time || '-'}</td>
+                        <td>${statusBadge}</td>
+                        <td>${actionButtons}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function formatHours(seconds) {
+            return (Number(seconds || 0) / 3600).toFixed(1);
+        }
+
+        function renderLeaderboard(leaderboard) {
+            const tbody = document.getElementById('leaderboardBody');
+            if (!tbody) return;
+
+            if (!leaderboard.length) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-white-50">No leaderboard data available yet.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = leaderboard.map((student, index) => {
+                const fullName = [student.first_name, student.last_name].filter(Boolean).join(' ').trim();
+                return `
+                    <tr>
+                        <td>#${index + 1}</td>
+                        <td>${fullName}<div class="small text-white-50">${student.id_number}</div></td>
+                        <td>${student.reward_points ?? 0}</td>
+                        <td>${student.total_hours ?? 0}</td>
+                        <td>${student.completed_sessions ?? 0}</td>
+                        <td>
+                            <div class="fw-semibold">${student.leaderboard_score ?? 0}</div>
+                            <div class="small text-white-50">50/30/20 weighted</div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function renderReservationStatusAnalytics(reservations) {
+            const canvas = document.getElementById('reservationStatusChart');
+            if (!canvas) return;
+
+            const statusCounts = { pending: 0, approved: 0, rejected: 0 };
+            reservations.forEach(item => {
+                const status = item.status || 'pending';
+                if (statusCounts[status] !== undefined) {
+                    statusCounts[status] += 1;
+                }
+            });
+
+            if (reservationStatusChart) reservationStatusChart.destroy();
+            reservationStatusChart = new Chart(canvas, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Pending', 'Approved', 'Rejected'],
+                    datasets: [{
+                        data: [statusCounts.pending, statusCounts.approved, statusCounts.rejected],
+                        backgroundColor: ['#fbbf24', '#22c55e', '#ef4444'],
+                        borderColor: '#0f2b46',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    plugins: {
+                        legend: { labels: { color: '#e6edf7' } }
+                    }
+                }
+            });
+        }
+
+        function renderLeaderboardAnalytics(leaderboard) {
+            const canvas = document.getElementById('leaderboardChart');
+            if (!canvas) return;
+
+            const topEntries = (leaderboard || []).slice(0, 5);
+            if (leaderboardChart) leaderboardChart.destroy();
+            leaderboardChart = new Chart(canvas, {
+                type: 'bar',
+                data: {
+                    labels: topEntries.map(item => [item.first_name, item.last_name].filter(Boolean).join(' ').trim() || item.id_number),
+                    datasets: [{
+                        label: 'Weighted Score',
+                        data: topEntries.map(item => Number(item.leaderboard_score || 0)),
+                        backgroundColor: '#57c6ff',
+                        borderColor: '#2196f3',
+                        borderWidth: 1,
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    plugins: {
+                        legend: { labels: { color: '#e6edf7' } }
+                    },
+                    scales: {
+                        x: { ticks: { color: '#e6edf7' }, grid: { color: 'rgba(255,255,255,0.08)' } },
+                        y: { ticks: { color: '#e6edf7' }, grid: { color: 'rgba(255,255,255,0.08)' } }
+                    }
+                }
+            });
+        }
+
+        function renderLeaderboardSectionChart(leaderboard) {
+            const canvas = document.getElementById('leaderboardSectionChart');
+            if (!canvas) return;
+
+            const topEntries = (leaderboard || []).slice(0, 5);
+            const labels = topEntries.map(item => [item.first_name, item.last_name].filter(Boolean).join(' ').trim() || item.id_number);
+
+            const pointsRaw = topEntries.map(item => Number(item.reward_points ?? 0));
+            const hoursRaw = topEntries.map(item => Number(item.total_hours ?? 0));
+            const tasksRaw = topEntries.map(item => Number(item.completed_sessions ?? 0));
+
+            const pointsScore = topEntries.map(item => Number(item.earned_points_score ?? 0));
+            const hoursScore = topEntries.map(item => Number(item.sit_in_hours_score ?? 0));
+            const tasksScore = topEntries.map(item => Number(item.task_completed_score ?? 0));
+            const totals = topEntries.map((_, index) => (pointsScore[index] + hoursScore[index] + tasksScore[index]));
+
+            const totalMax = Math.max(100, ...totals, 1);
+
+            const totalLabelsPlugin = {
+                id: 'leaderboardTotalLabels',
+                afterDatasetsDraw(chart) {
+                    const { ctx } = chart;
+                    const baseMeta = chart.getDatasetMeta(0);
+                    const yScale = chart.scales.y;
+
+                    ctx.save();
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = '600 13px Segoe UI, Arial, sans-serif';
+                    ctx.textAlign = 'center';
+
+                    baseMeta.data.forEach((bar, index) => {
+                        const total = Number(totals[index] || 0);
+                        const y = yScale.getPixelForValue(total);
+                        ctx.fillText(`${Math.round(total)}%`, bar.x, y - 10);
+                    });
+
+                    ctx.restore();
+                }
+            };
+
+            if (leaderboardSectionChart) leaderboardSectionChart.destroy();
+            leaderboardSectionChart = new Chart(canvas, {
+                type: 'bar',
+                data: {
+                    labels,
+                    datasets: [
+                        {
+                            label: 'Points (50%)',
+                            data: pointsScore,
+                            backgroundColor: 'rgba(87, 198, 255, 0.92)',
+                            borderColor: '#2196f3',
+                            borderWidth: 1,
+                            borderRadius: 8,
+                            stack: 'score',
+                            barPercentage: 0.7,
+                            categoryPercentage: 0.72,
+                        },
+                        {
+                            label: 'Duration / Hours (30%)',
+                            data: hoursScore,
+                            backgroundColor: 'rgba(167, 139, 250, 0.9)',
+                            borderColor: '#7c3aed',
+                            borderWidth: 1,
+                            borderRadius: 8,
+                            stack: 'score',
+                            barPercentage: 0.7,
+                            categoryPercentage: 0.72,
+                        },
+                        {
+                            label: 'Tasks (20%)',
+                            data: tasksScore,
+                            backgroundColor: 'rgba(74, 222, 128, 0.9)',
+                            borderColor: '#16a34a',
+                            borderWidth: 1,
+                            borderRadius: 8,
+                            stack: 'score',
+                            barPercentage: 0.7,
+                            categoryPercentage: 0.72,
+                        }
+                    ]
+                },
+                plugins: [totalLabelsPlugin],
+                options: {
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'bottom',
+                            labels: { color: '#e6edf7' }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(8,19,37,0.96)',
+                            titleColor: '#e6edf7',
+                            bodyColor: '#e6edf7',
+                            callbacks: {
+                                label: (context) => {
+                                    const value = Number(context.raw || 0);
+                                    return `${context.dataset.label}: ${value.toFixed(1)}%`;
+                                },
+                                footer: (tooltipItems) => {
+                                    const index = tooltipItems?.[0]?.dataIndex ?? 0;
+                                    return `Points: ${pointsRaw[index]} | Hours: ${hoursRaw[index]} | Tasks: ${tasksRaw[index]}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            stacked: true,
+                            ticks: {
+                                color: '#e6edf7',
+                                font: { size: 11 },
+                                maxRotation: 0,
+                                minRotation: 0,
+                                autoSkip: false
+                            },
+                            grid: { display: false },
+                            border: { display: false }
+                        },
+                        y: {
+                            stacked: true,
+                            beginAtZero: true,
+                            suggestedMax: totalMax,
+                            ticks: {
+                                color: '#e6edf7',
+                                callback: (value) => `${value}%`
+                            },
+                            grid: { color: 'rgba(255,255,255,0.06)' },
+                            border: { display: false }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderAnalytics(stats, reservations, leaderboard) {
+            document.getElementById('analyticsStudents').textContent = stats.registered_students || 0;
+            document.getElementById('analyticsActive').textContent = stats.currently_sitin || 0;
+            document.getElementById('analyticsPending').textContent = stats.pending_reservations || 0;
+            document.getElementById('analyticsRewards').textContent = stats.total_reward_points || 0;
+            renderReservationStatusAnalytics(reservations || []);
+            renderLeaderboardAnalytics(leaderboard || []);
+            renderLeaderboardSectionChart(leaderboard || []);
+        }
+
+        function toCsvValue(value) {
+            return `"${String(value ?? '').replace(/"/g, '""')}"`;
+        }
+
+        function downloadCsv(filename, headers, rows) {
+            const csv = [headers.map(toCsvValue).join(','), ...rows.map(row => row.map(toCsvValue).join(','))].join('\n');
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = filename;
+            link.click();
+            URL.revokeObjectURL(link.href);
+        }
+
+        function buildStudentReportRows() {
+            return studentCache.map(student => [
+                student.id_number,
+                [student.first_name, student.middle_name, student.last_name].filter(Boolean).join(' ').trim(),
+                student.course,
+                student.year_level,
+                student.email || '',
+                student.address || '',
+                student.remaining_sessions ?? 0,
+                student.reward_points ?? 0
+            ]);
+        }
+
+        function buildReservationReportRows() {
+            return reservationCache.map(item => [
+                item.id_number,
+                [item.first_name, item.last_name].filter(Boolean).join(' ').trim(),
+                item.lab_room,
+                item.purpose,
+                item.preferred_date || '',
+                item.preferred_time || '',
+                item.status,
+                item.created_at || ''
+            ]);
+        }
+
+        function buildHistoryReportRows() {
+            return adminHistoryCache.map(item => [
+                item.id_number,
+                [item.first_name, item.last_name].filter(Boolean).join(' ').trim(),
+                item.purpose,
+                item.lab_room,
+                item.time_in || '',
+                item.time_out || '',
+                item.duration_time || '',
+                item.status
+            ]);
+        }
+
+        function buildLeaderboardReportRows() {
+            return adminLeaderboardCache.map((item, index) => [
+                index + 1,
+                item.id_number,
+                [item.first_name, item.last_name].filter(Boolean).join(' ').trim(),
+                item.reward_points ?? 0,
+                item.total_hours ?? 0,
+                item.completed_sessions ?? 0,
+                item.leaderboard_score ?? 0,
+                item.earned_points_score ?? 0,
+                item.sit_in_hours_score ?? 0,
+                item.task_completed_score ?? 0
+            ]);
+        }
+
+        function renderRewardHistory(rewards) {
+            const tbody = document.getElementById('rewardHistoryBody');
+            if (!tbody) return;
+
+            if (!rewards.length) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-white-50">No reward history available yet.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = rewards.map(item => {
+                const fullName = [item.first_name, item.last_name].filter(Boolean).join(' ').trim();
+                return `
+                    <tr>
+                        <td>${item.created_at ? new Date(item.created_at).toLocaleString() : '-'}</td>
+                        <td>${fullName}<div class="small text-white-50">${item.id_number || ''}</div></td>
+                        <td>${escapeHtml(item.source_type || '-')}</td>
+                        <td>${escapeHtml(item.description || '-')}</td>
+                        <td>${item.points ?? 0}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function renderHistory(history) {
+            const tbody = document.getElementById('historyBodyAdmin');
+            if (!tbody) return;
+
+            if (!history.length) {
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-white-50">No session history available yet.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = history.map(item => {
+                const fullName = [item.first_name, item.last_name].filter(Boolean).join(' ').trim();
+                const statusBadge = item.status === 'active'
+                    ? '<span class="badge text-bg-success">Active</span>'
+                    : '<span class="badge text-bg-secondary">Completed</span>';
+
+                return `
+                    <tr>
+                        <td>${item.id_number}</td>
+                        <td>${fullName}</td>
+                        <td>${item.purpose}</td>
+                        <td>${item.lab_room}</td>
+                        <td>${item.time_in ? new Date(item.time_in).toLocaleString() : '-'}</td>
+                        <td>${item.duration_time || '-'}</td>
+                        <td>${item.time_out ? new Date(item.time_out).toLocaleString() : '-'}</td>
+                        <td>${statusBadge}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function renderAnnouncements(announcements) {
+            const container = document.getElementById('adminAnnouncementList');
+            if (!container) return;
+
+            if (!announcements.length) {
+                container.innerHTML = '<div class="empty-note">No announcements posted yet.</div>';
+                return;
+            }
+
+            container.innerHTML = announcements.map(item => {
+                const createdAt = item.created_at ? new Date(item.created_at).toLocaleString() : '-';
+                const audienceLabel = item.audience ? item.audience.toUpperCase() : 'ALL';
+                return `
+                    <div class="announcement-feed-item">
+                        <div class="announcement-head">
+                            <span class="badge text-bg-info">${escapeHtml(audienceLabel)}</span>
+                            <span>${escapeHtml(item.posted_by || 'CCS Admin')}</span>
+                            <span>${escapeHtml(createdAt)}</span>
+                        </div>
+                        <div class="announcement-title">${escapeHtml(item.title || 'Announcement')}</div>
+                        <div class="announcement-body">${escapeHtml(item.body || '')}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderFeedbacks(feedbacks) {
+            const container = document.getElementById('adminFeedbackList');
+            if (!container) return;
+
+            if (!feedbacks.length) {
+                container.innerHTML = '<div class="empty-note">No feedback submitted yet.</div>';
+                return;
+            }
+
+            container.innerHTML = feedbacks.map(item => {
+                const createdAt = item.created_at ? new Date(item.created_at).toLocaleString() : '-';
+                const statusLabel = item.status === 'reviewed' ? 'Reviewed' : 'New';
+                const statusClass = item.status === 'reviewed' ? 'text-bg-success' : 'text-bg-warning';
+                return `
+                    <div class="feedback-feed-item">
+                        <div class="feedback-head">
+                            <span class="badge ${statusClass}">${escapeHtml(statusLabel)}</span>
+                            <span>${escapeHtml(item.id_number || '')}</span>
+                            <span>${escapeHtml(item.first_name || '')} ${escapeHtml(item.last_name || '')}</span>
+                            <span>${escapeHtml(createdAt)}</span>
+                        </div>
+                        <div class="feedback-subject">${escapeHtml(item.subject || 'Feedback')}</div>
+                        <div class="feedback-body mb-3">${escapeHtml(item.message || '')}</div>
+                        ${item.status !== 'reviewed' ? `<button class="btn btn-outline-soft btn-sm" data-review-feedback="${item.id}"><i class="bi bi-check2 me-1"></i>Mark Reviewed</button>` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function useStudentInForm(studentId) {
+            const student = studentCache.find(item => Number(item.id) === Number(studentId));
+            if (!student) return;
+            const fullName = [student.first_name, student.middle_name, student.last_name].filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
+            document.getElementById('formIdNumber').value = student.id_number;
+            document.getElementById('formStudentName').value = fullName;
+            document.getElementById('formRemaining').value = student.remaining_sessions ?? 30;
+            setActiveSection('sitin-form');
+            showToast('Student loaded into Sit-in Form.', 'success');
+        }
+
+        async function loadDashboard() {
+            try {
+                const [dashRes, recordRes, reservationRes, historyRes] = await Promise.all([
+                    apiGet('admin_dashboard'),
+                    apiGet('current_sitin_records'),
+                    apiGet('admin_reservations'),
+                    apiGet('admin_session_history')
+                ]);
+                const rewardRes = await apiGet('reward_history', 'limit=20');
+
+                if (dashRes.success) {
+                    document.getElementById('registeredCount').textContent = dashRes.stats.registered_students || 0;
+                    document.getElementById('currentCount').textContent = dashRes.stats.currently_sitin || 0;
+                    document.getElementById('totalSitinCount').textContent = dashRes.stats.total_sitin || 0;
+                    document.getElementById('pendingReservationCount').textContent = dashRes.stats.pending_reservations || 0;
+                    document.getElementById('totalRewardPoints').textContent = dashRes.stats.total_reward_points || 0;
+                    renderLanguageChart(dashRes.language_usage || {});
+                    renderLeaderboard(dashRes.leaderboard || []);
+                    adminLeaderboardCache = dashRes.leaderboard || [];
+                }
+
+                if (recordRes.success) {
+                    renderCurrentRecords(recordRes.records || []);
+                }
+                if (reservationRes && reservationRes.success) {
+                    reservationCache = reservationRes.reservations || [];
+                    renderReservations(reservationCache);
+                }
+
+                if (historyRes && historyRes.success) {
+                    adminHistoryCache = historyRes.history || [];
+                    renderHistory(adminHistoryCache);
+                }
+                if (rewardRes && rewardRes.success) {
+                    rewardHistoryCache = rewardRes.rewards || [];
+                    renderRewardHistory(rewardHistoryCache);
+                }
+
+                renderAnalytics(dashRes.stats || {}, reservationCache, adminLeaderboardCache);
+            } catch (error) {
+                showToast('Failed to load dashboard data.', 'error');
+            }
+        }
+
+        async function resetStudentSessions(studentId, idNumber) {
+            const confirmReset = window.confirm(`Reset remaining sessions for ${idNumber} back to 30?`);
+            if (!confirmReset) return;
+
+            const data = await apiPost('reset_sessions', {
+                id_number: idNumber,
+                remaining_sessions: 30
+            });
+
+            if (data.success) {
+                showToast('Student sessions reset successfully.', 'success');
+                await Promise.all([loadStudents(), loadDashboard()]);
+            } else {
+                showToast(data.message || 'Failed to reset sessions.', 'error');
+            }
+        }
+
+        document.getElementById('rewardForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const idNumber = document.getElementById('rewardIdNumber').value.trim();
+            const points = Number(document.getElementById('rewardPoints').value);
+            const description = document.getElementById('rewardDescription').value.trim();
+
+            if (!idNumber || !points || points <= 0 || !description) {
+                showToast('Please complete the reward form.', 'error');
+                return;
+            }
+
+            const data = await apiPost('award_reward_points', {
+                id_number: idNumber,
+                points,
+                description
+            });
+
+            if (data.success) {
+                showToast('Reward points awarded successfully.', 'success');
+                this.reset();
+                document.getElementById('rewardPoints').value = 1;
+                await loadDashboard();
+            } else {
+                showToast(data.message || 'Failed to award reward points.', 'error');
+            }
+        });
+
+        document.getElementById('clearRewardFormBtn').addEventListener('click', function () {
+            document.getElementById('rewardForm').reset();
+            document.getElementById('rewardPoints').value = 1;
+        });
+
+        document.getElementById('downloadStudentsReportBtn')?.addEventListener('click', function () {
+            downloadCsv('student-report.csv', ['ID Number', 'Name', 'Course', 'Year', 'Email', 'Address', 'Remaining Sessions', 'Reward Points'], buildStudentReportRows());
+        });
+
+        document.getElementById('downloadReservationsReportBtn')?.addEventListener('click', function () {
+            downloadCsv('reservation-report.csv', ['ID Number', 'Name', 'Lab', 'Purpose', 'Preferred Date', 'Preferred Time', 'Status', 'Created At'], buildReservationReportRows());
+        });
+
+        document.getElementById('downloadHistoryReportBtn')?.addEventListener('click', function () {
+            downloadCsv('session-history-report.csv', ['ID Number', 'Name', 'Purpose', 'Lab', 'Time In', 'Time Out', 'Duration', 'Status'], buildHistoryReportRows());
+        });
+
+        document.getElementById('downloadLeaderboardReportBtn')?.addEventListener('click', function () {
+            downloadCsv('leaderboard-report.csv', ['Rank', 'ID Number', 'Name', 'Reward Points', 'Total Hours', 'Completed Sessions', 'Weighted Score', 'Earned Points Score', 'Sit-in Hours Score', 'Task Completed Score'], buildLeaderboardReportRows());
+        });
+
+        document.getElementById('downloadLeaderboardReportBtn')?.addEventListener('click', function () {
+            downloadCsv('leaderboard-report.csv', ['Rank', 'ID Number', 'Name', 'Reward Points', 'Total Hours', 'Completed Sessions', 'Weighted Score', 'Earned Points Score', 'Sit-in Hours Score', 'Task Completed Score'], buildLeaderboardReportRows());
+        });
+
+        async function loadAnnouncements() {
+            try {
+                const data = await apiGet('announcements', 'audience=all');
+                if (!data.success) {
+                    showToast(data.message || 'Unable to load announcements.', 'error');
+                    return;
+                }
+                announcementCache = data.announcements || [];
+                renderAnnouncements(announcementCache);
+            } catch (error) {
+                showToast('Network error while loading announcements.', 'error');
+            }
+        }
+
+        async function loadFeedbacks() {
+            try {
+                const data = await apiGet('feedbacks');
+                if (!data.success) {
+                    showToast(data.message || 'Unable to load feedback.', 'error');
+                    return;
+                }
+                feedbackCache = data.feedbacks || [];
+                renderFeedbacks(feedbackCache);
+            } catch (error) {
+                showToast('Network error while loading feedback.', 'error');
+            }
+        }
+
+        async function loadStudents() {
+            try {
+                const data = await apiGet('students');
+                if (!data.success) {
+                    showToast(data.message || 'Unable to load students.', 'error');
+                    return;
+                }
+                studentCache = data.students || [];
+                renderStudentsList(studentCache);
+            } catch (error) {
+                showToast('Network error while loading students.', 'error');
+            }
+        }
+
+        async function loadReservations() {
+            try {
+                const data = await apiGet('admin_reservations');
+                if (!data.success) {
+                    showToast(data.message || 'Unable to load reservations.', 'error');
+                    return;
+                }
+                reservationCache = data.reservations || [];
+                renderReservations(reservationCache);
+                document.getElementById('pendingReservationCount').textContent = reservationCache.filter(item => item.status === 'pending').length;
+            } catch (error) {
+                showToast('Network error while loading reservations.', 'error');
+            }
+        }
+
+        async function searchStudents() {
+            const q = document.getElementById('searchInput').value.trim();
+            try {
+                const data = await apiGet('search_students', `query=${encodeURIComponent(q)}`);
+                if (!data.success) {
+                    showToast(data.message || 'Search failed.', 'error');
+                    return;
+                }
+                renderSearchStudents(data.students || []);
+            } catch (error) {
+                showToast('Network error while searching.', 'error');
+            }
+        }
+
+        function clearSitinForm() {
+            document.getElementById('sitinForm').reset();
+            document.getElementById('formStudentName').value = '';
+            document.getElementById('formRemaining').value = 30;
+        }
+
+        document.querySelectorAll('[data-section]').forEach(link => {
+            link.addEventListener('click', function (e) {
+                e.preventDefault();
+                setActiveSection(this.dataset.section);
+            });
+        });
+
+        document.querySelectorAll('[data-section-jump]').forEach(btn => {
+            btn.addEventListener('click', function () {
+                setActiveSection(this.dataset.sectionJump);
+            });
+        });
+
+        document.getElementById('logoutLink').addEventListener('click', function (e) {
+            e.preventDefault();
+            localStorage.removeItem(USER_KEY);
+            window.location.href = 'login.html';
+        });
+
+        document.getElementById('searchBtn').addEventListener('click', searchStudents);
+        document.getElementById('searchInput').addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                searchStudents();
+            }
+        });
+
+        document.body.addEventListener('click', async function (e) {
+            const useBtn = e.target.closest('[data-use-student]');
+            if (useBtn) {
+                useStudentInForm(useBtn.dataset.useStudent);
+                return;
+            }
+
+            const resetBtn = e.target.closest('[data-reset-sessions]');
+            if (resetBtn) {
+                await resetStudentSessions(resetBtn.dataset.resetSessions, resetBtn.dataset.idNumber);
+                return;
+            }
+
+            const approveBtn = e.target.closest('[data-approve-reservation]');
+            if (approveBtn) {
+                const data = await apiPost('approve_reservation', { reservation_id: Number(approveBtn.dataset.approveReservation) });
+                if (data.success) {
+                    showToast('Reservation approved.', 'success');
+                    await loadDashboard();
+                    await loadReservations();
+                } else {
+                    showToast(data.message || 'Could not approve reservation.', 'error');
+                }
+                return;
+            }
+
+            const rejectBtn = e.target.closest('[data-reject-reservation]');
+            if (rejectBtn) {
+                const data = await apiPost('reject_reservation', { reservation_id: Number(rejectBtn.dataset.rejectReservation) });
+                if (data.success) {
+                    showToast('Reservation rejected.', 'warning');
+                    await loadDashboard();
+                    await loadReservations();
+                } else {
+                    showToast(data.message || 'Could not reject reservation.', 'error');
+                }
+                return;
+            }
+
+            const reviewBtn = e.target.closest('[data-review-feedback]');
+            if (reviewBtn) {
+                const data = await apiPost('review_feedback', { feedback_id: Number(reviewBtn.dataset.reviewFeedback) });
+                if (data.success) {
+                    showToast('Feedback marked as reviewed.', 'success');
+                    await loadFeedbacks();
+                } else {
+                    showToast(data.message || 'Could not review feedback.', 'error');
+                }
+                return;
+            }
+
+            const endBtn = e.target.closest('[data-end-session]');
+            if (endBtn) {
+                const sessionId = Number(endBtn.dataset.endSession);
+                const data = await apiPost('end_session', { session_id: sessionId });
+                if (data.success) {
+                    showToast('Session ended successfully.', 'success');
+                    await loadDashboard();
+                } else {
+                    showToast(data.message || 'Could not end session.', 'error');
+                }
+            }
+        });
+
+        document.getElementById('announcementForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const title = document.getElementById('announcementTitle').value.trim();
+            const body = document.getElementById('announcementBody').value.trim();
+            const audience = document.getElementById('announcementAudience').value;
+
+            if (!title || !body) {
+                showToast('Title and message are required.', 'error');
+                return;
+            }
+
+            const data = await apiPost('create_announcement', {
+                title,
+                body,
+                audience,
+                posted_by: 'CCS Admin'
+            });
+
+            if (data.success) {
+                showToast('Announcement posted successfully.', 'success');
+                this.reset();
+                await loadAnnouncements();
+            } else {
+                showToast(data.message || 'Failed to post announcement.', 'error');
+            }
+        });
+
+        document.getElementById('sitinForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+            const idNumber = document.getElementById('formIdNumber').value.trim();
+            const labRoom = document.getElementById('formLab').value.trim();
+            const selectedPurpose = document.getElementById('formPurpose').value;
+            const customPurpose = document.getElementById('formPurposeCustom').value.trim();
+            const purpose = customPurpose ? `${selectedPurpose} - ${customPurpose}` : selectedPurpose;
+
+            if (!idNumber || !labRoom || !purpose) {
+                showToast('Please complete all required fields.', 'error');
+                return;
+            }
+
+            const data = await apiPost('create_sitin', {
+                id_number: idNumber,
+                lab_room: labRoom,
+                purpose: purpose
+            });
+
+            if (data.success) {
+                showToast('Sit-in form submitted successfully.', 'success');
+                clearSitinForm();
+                await loadDashboard();
+            } else {
+                showToast(data.message || 'Failed to save sit-in form.', 'error');
+            }
+        });
+
+        document.getElementById('clearFormBtn').addEventListener('click', clearSitinForm);
+        document.getElementById('refreshRecordsBtn').addEventListener('click', loadDashboard);
+        document.getElementById('refreshReservationsBtn').addEventListener('click', loadReservations);
+        document.getElementById('refreshHistoryBtn').addEventListener('click', loadDashboard);
+        document.getElementById('refreshAnnouncementsBtn').addEventListener('click', loadAnnouncements);
+        document.getElementById('refreshFeedbacksBtn')?.addEventListener('click', loadFeedbacks);
+
+        setActiveSection('dashboard');
+        loadStudents();
+        loadDashboard();
+        loadReservations();
+        loadAnnouncements();
+        loadFeedbacks();
+    </script>
+</body>
+</html>

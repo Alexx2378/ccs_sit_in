@@ -1,0 +1,1732 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard - CCS Sit-in Monitoring System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; }
+
+        :root {
+            --bg-0: #081325;
+            --bg-1: #0a1d34;
+            --bg-2: #0f2b46;
+            --panel: rgba(255, 255, 255, 0.06);
+            --panel-strong: rgba(255, 255, 255, 0.08);
+            --border: rgba(255, 255, 255, 0.1);
+            --text: #e6edf7;
+            --muted: rgba(230, 237, 247, 0.62);
+            --accent: #2196f3;
+            --accent-2: #57c6ff;
+            --danger: #dc3545;
+            --success: #16a34a;
+            --shadow: 0 18px 50px rgba(0, 0, 0, 0.28);
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background:
+                radial-gradient(circle at top left, rgba(33, 150, 243, 0.15), transparent 32%),
+                radial-gradient(circle at bottom right, rgba(124, 58, 237, 0.16), transparent 30%),
+                linear-gradient(135deg, var(--bg-0) 0%, var(--bg-1) 42%, var(--bg-2) 100%);
+            color: var(--text);
+            overflow-x: hidden;
+        }
+
+        .orb-container {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+        .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.28;
+            animation: orbFloat 18s ease-in-out infinite alternate;
+        }
+        .orb-1 { width: 400px; height: 400px; background: #2196F3; top: -8%; left: -7%; }
+        .orb-2 { width: 330px; height: 330px; background: #7c3aed; bottom: -10%; right: -8%; animation-duration: 24s; animation-delay: -5s; }
+        .orb-3 { width: 270px; height: 270px; background: #06b6d4; top: 52%; left: 58%; animation-duration: 22s; animation-delay: -10s; }
+        @keyframes orbFloat {
+            0% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(60px, -35px) scale(1.08); }
+            66% { transform: translate(-30px, 45px) scale(0.96); }
+            100% { transform: translate(15px, -18px) scale(1.03); }
+        }
+
+        .page-wrapper {
+            position: relative;
+            z-index: 1;
+            animation: pageIn 0.6s cubic-bezier(.4,0,.2,1) both;
+        }
+        @keyframes pageIn {
+            from { opacity: 0; transform: translateY(22px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .navbar {
+            background: rgba(15, 34, 60, 0.72);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+        .navbar-brand {
+            color: #fff !important;
+            font-size: 1rem;
+            font-weight: 600;
+            letter-spacing: 0.2px;
+        }
+        .nav-link {
+            color: rgba(255,255,255,0.8) !important;
+            font-size: 0.95rem;
+            transition: color .2s ease, opacity .2s ease;
+        }
+        .nav-link:hover,
+        .nav-link.active { color: #fff !important; }
+
+        .dashboard-shell {
+            padding: 28px 20px 48px;
+        }
+
+        .section-panel {
+            display: none;
+            animation: panelIn 0.35s ease both;
+        }
+        .section-panel.active { display: block; }
+        @keyframes panelIn {
+            from { opacity: 0; transform: translateY(14px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .hero-grid {
+            display: grid;
+            grid-template-columns: 1.25fr 0.95fr;
+            gap: 22px;
+        }
+
+        .glass-card {
+            background: var(--panel);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            box-shadow: var(--shadow);
+        }
+
+        .hero-card {
+            padding: 28px;
+            min-height: 360px;
+        }
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 14px;
+            border-radius: 999px;
+            background: rgba(33, 150, 243, 0.14);
+            border: 1px solid rgba(33, 150, 243, 0.25);
+            color: #d7ebff;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 18px;
+        }
+        .hero-title {
+            font-size: clamp(2rem, 3vw, 3.15rem);
+            line-height: 1.05;
+            margin-bottom: 12px;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            background: linear-gradient(135deg, #ffffff 0%, #b2d7ff 45%, #6fd3ff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .hero-subtitle {
+            color: var(--muted);
+            max-width: 62ch;
+            margin-bottom: 24px;
+            font-size: 1rem;
+            line-height: 1.7;
+        }
+        .hero-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 24px;
+        }
+        .btn-soft,
+        .btn-primary-gradient,
+        .btn-outline-soft {
+            border-radius: 12px;
+            font-weight: 600;
+            padding: 11px 18px;
+            transition: transform .2s ease, box-shadow .2s ease, background .2s ease;
+        }
+        .btn-primary-gradient {
+            border: none;
+            color: #fff;
+            background: linear-gradient(135deg, #2196f3, #1976d2);
+            box-shadow: 0 8px 26px rgba(33, 150, 243, 0.28);
+        }
+        .btn-primary-gradient:hover { transform: translateY(-2px); color: #fff; }
+        .btn-outline-soft {
+            border: 1px solid rgba(255,255,255,0.16);
+            color: var(--text);
+            background: rgba(255,255,255,0.04);
+        }
+        .btn-outline-soft:hover { transform: translateY(-2px); color: #fff; background: rgba(255,255,255,0.08); }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 12px;
+        }
+        .stat-box {
+            padding: 18px 16px;
+            border-radius: 16px;
+            background: rgba(255,255,255,0.045);
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+        .stat-number {
+            font-size: 1.6rem;
+            font-weight: 800;
+            line-height: 1;
+            margin-bottom: 6px;
+            color: #8fd0ff;
+        }
+        .stat-label {
+            color: rgba(255,255,255,0.58);
+            font-size: 0.82rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .profile-summary-card {
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            min-height: 360px;
+        }
+        .profile-photo {
+            width: 138px;
+            height: 138px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid rgba(255,255,255,0.2);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+            background: rgba(255,255,255,0.06);
+        }
+        .profile-name {
+            font-size: 1.35rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+        .profile-meta {
+            color: var(--muted);
+            font-size: 0.94rem;
+            line-height: 1.6;
+        }
+
+        .content-grid {
+            margin-top: 22px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 22px;
+        }
+        .content-card {
+            padding: 22px;
+            min-height: 280px;
+        }
+        .section-title {
+            font-size: 1.05rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .section-title i { color: #8fd0ff; }
+        .announcement-item,
+        .rules-list li {
+            color: rgba(255,255,255,0.82);
+            font-size: 0.94rem;
+            line-height: 1.65;
+        }
+        .announcement-item + .announcement-item { margin-top: 16px; }
+        .announcement-empty {
+            color: var(--muted);
+            font-size: 0.92rem;
+            line-height: 1.7;
+        }
+        .feedback-item,
+        .feedback-empty {
+            color: rgba(255,255,255,0.82);
+            font-size: 0.94rem;
+            line-height: 1.65;
+        }
+        .feedback-item + .feedback-item { margin-top: 16px; }
+        .feedback-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.8rem;
+            padding: 6px 10px;
+            border-radius: 999px;
+            color: #d7ebff;
+            background: rgba(87, 198, 255, 0.14);
+            border: 1px solid rgba(87, 198, 255, 0.2);
+            margin-bottom: 10px;
+        }
+        .announcement-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.8rem;
+            padding: 6px 10px;
+            border-radius: 999px;
+            color: #d7ebff;
+            background: rgba(33, 150, 243, 0.16);
+            border: 1px solid rgba(33, 150, 243, 0.2);
+            margin-bottom: 10px;
+        }
+        .scroll-pane {
+            max-height: 220px;
+            overflow: auto;
+            padding-right: 8px;
+        }
+
+        .form-shell {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 22px;
+            align-items: start;
+        }
+        .avatar-card {
+            padding: 24px;
+            text-align: center;
+        }
+        .avatar-frame {
+            width: 170px;
+            height: 170px;
+            margin: 0 auto 16px;
+            border-radius: 50%;
+            padding: 5px;
+            background: linear-gradient(135deg, rgba(33,150,243,0.72), rgba(87,198,255,0.2));
+        }
+        .avatar-frame img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            background: rgba(255,255,255,0.08);
+            border: 2px solid rgba(255,255,255,0.08);
+        }
+        .upload-actions {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 14px;
+        }
+        .small-note {
+            color: var(--muted);
+            font-size: 0.84rem;
+            line-height: 1.6;
+        }
+
+        .form-card {
+            padding: 24px;
+        }
+        .form-label {
+            color: rgba(255,255,255,0.68);
+            font-size: 0.86rem;
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+        .form-control,
+        .form-select {
+            background: rgba(255,255,255,0.07);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 12px;
+            color: #fff;
+            padding: 11px 14px;
+        }
+        .form-control::placeholder { color: rgba(255,255,255,0.34); }
+        .form-control:focus,
+        .form-select:focus {
+            border-color: rgba(33,150,243,0.5);
+            background: rgba(255,255,255,0.1);
+            box-shadow: 0 0 0 3px rgba(33,150,243,0.14);
+            color: #fff;
+        }
+        .form-select option { background: #10263d; color: #fff; }
+
+        .preview-row {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            margin-bottom: 18px;
+        }
+        .preview-thumb {
+            width: 64px;
+            height: 64px;
+            border-radius: 14px;
+            object-fit: cover;
+            border: 1px solid rgba(255,255,255,0.14);
+            background: rgba(255,255,255,0.06);
+        }
+        .field-hint {
+            color: var(--muted);
+            font-size: 0.82rem;
+            margin-top: 4px;
+        }
+
+        .history-card,
+        .reservation-card {
+            padding: 22px;
+        }
+        .table-dark-surface {
+            --bs-table-bg: transparent;
+            --bs-table-color: rgba(255,255,255,0.86);
+            --bs-table-border-color: rgba(255,255,255,0.08);
+            margin-bottom: 0;
+        }
+        .table-dark-surface thead th {
+            color: #cfe8ff;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            border-bottom: 1px solid rgba(255,255,255,0.12);
+        }
+
+        .toast-container-custom {
+            position: fixed;
+            top: 70px;
+            right: 18px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .toast-notif {
+            padding: 13px 18px;
+            border-radius: 12px;
+            color: #fff;
+            font-size: 0.92rem;
+            font-weight: 500;
+            min-width: 280px;
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 8px 28px rgba(0,0,0,0.28);
+            animation: toastIn 0.45s cubic-bezier(.21,1.02,.73,1) both;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .toast-notif.success { background: rgba(22,163,74,0.86); }
+        .toast-notif.error { background: rgba(220,38,38,0.86); }
+        .toast-notif.warning { background: rgba(234,179,8,0.88); color: #1a1a1a; }
+        .toast-notif .toast-icon { font-size: 1.15rem; }
+        @keyframes toastIn {
+            from { opacity: 0; transform: translateX(36px) scale(0.96); }
+            to { opacity: 1; transform: translateX(0) scale(1); }
+        }
+        @keyframes toastOut { to { opacity: 0; transform: translateX(36px) scale(0.96); } }
+
+        .camera-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 10000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            background: rgba(3, 8, 16, 0.72);
+            backdrop-filter: blur(10px);
+        }
+        .camera-overlay.active { display: flex; }
+        .camera-card {
+            width: min(920px, 100%);
+            background: rgba(10, 20, 34, 0.95);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 20px;
+            box-shadow: var(--shadow);
+            padding: 20px;
+        }
+        .camera-preview {
+            width: 100%;
+            max-height: 60vh;
+            border-radius: 16px;
+            background: #000;
+            object-fit: cover;
+        }
+
+        @media (max-width: 992px) {
+            .hero-grid,
+            .content-grid,
+            .form-shell {
+                grid-template-columns: 1fr;
+            }
+            .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+
+        @media (max-width: 576px) {
+            .dashboard-shell { padding: 20px 14px 40px; }
+            .hero-card,
+            .profile-summary-card,
+            .content-card,
+            .form-card,
+            .avatar-card,
+            .history-card,
+            .reservation-card { padding: 18px; }
+            .stats-grid { grid-template-columns: 1fr; }
+            .hero-actions .btn,
+            .upload-actions .btn,
+            .hero-actions .dropdown .btn { width: 100%; }
+            .toast-notif { min-width: 0; width: calc(100vw - 36px); }
+        }
+
+        /* Professional Light Theme Override */
+        :root {
+            --surface-bg: #f7f6fb;
+            --surface-card: #ffffff;
+            --surface-border: #e6e1f3;
+            --text-primary: #1f1b2d;
+            --text-muted: #6a637d;
+            --brand-primary: #2b124c;
+            --brand-primary-hover: #1f0d37;
+            --brand-soft: #efe9fb;
+            --brand-yellow: #edb42f;
+            --brand-yellow-hover: #d9a224;
+            --success: #2e7d32;
+            --danger: #c62828;
+            --panel: #ffffff;
+            --panel-strong: #ffffff;
+            --border: #e6e1f3;
+            --text: #1f1b2d;
+            --muted: #6a637d;
+            --accent: #5e3aa1;
+            --accent-2: #7a54bc;
+            --shadow: 0 10px 24px rgba(44, 31, 79, 0.08);
+        }
+
+        body {
+            background: radial-gradient(circle at top right, #f6f1ff 0%, rgba(246, 241, 255, 0) 45%), #f7f6fb;
+            color: var(--text-primary);
+        }
+        .orb-container { display: none; }
+        .navbar {
+            background: var(--brand-primary);
+            border-bottom: 1px solid #3b1a63;
+            backdrop-filter: none;
+            -webkit-backdrop-filter: none;
+            box-shadow: 0 10px 24px rgba(43, 18, 76, 0.28);
+        }
+        .navbar-brand,
+        .nav-link,
+        .nav-link:hover,
+        .nav-link.active { color: #ffffff !important; }
+
+        .glass-card,
+        .content-card,
+        .hero-card,
+        .profile-summary-card,
+        .avatar-card,
+        .form-card,
+        .history-card,
+        .reservation-card,
+        .camera-card {
+            background: #ffffff;
+            border: 1px solid var(--surface-border);
+            box-shadow: var(--shadow);
+            backdrop-filter: none;
+            -webkit-backdrop-filter: none;
+        }
+        .camera-overlay { background: rgba(31, 27, 45, 0.5); }
+        .camera-preview { background: #1f1b2d; }
+
+        .hero-title {
+            background: none;
+            -webkit-text-fill-color: var(--text-primary);
+            color: var(--text-primary);
+            font-weight: 700;
+        }
+        .hero-subtitle,
+        .profile-meta,
+        .small-note,
+        .announcement-empty,
+        .feedback-empty,
+        .stat-label,
+        .section-title i,
+        .form-label,
+        .field-hint,
+        .empty-note { color: var(--text-muted) !important; }
+
+        .profile-name,
+        .section-title,
+        .preview-row .fw-semibold,
+        .rules-list li,
+        .announcement-item,
+        .feedback-item { color: var(--text-primary); }
+
+        .hero-badge,
+        .feedback-chip,
+        .announcement-chip {
+            color: #2b124c;
+            background: #fff4d6;
+            border: 1px solid #f2d48d;
+        }
+        .stat-box {
+            background: #faf8ff;
+            border: 1px solid #e5dcf5;
+        }
+        .stat-number { color: var(--brand-primary); }
+
+        .btn-primary-gradient {
+            background: var(--brand-yellow);
+            border: 1px solid var(--brand-yellow);
+            color: #2b124c;
+            box-shadow: 0 8px 18px rgba(237, 180, 47, 0.3);
+        }
+        .btn-primary-gradient:hover {
+            background: var(--brand-yellow-hover);
+            border-color: var(--brand-yellow-hover);
+            color: #1f0d37;
+        }
+        .btn-outline-soft,
+        .btn-soft {
+            background: #fff9e8;
+            border: 1px solid #e3ca88;
+            color: #2b124c;
+        }
+        .btn-outline-soft:hover,
+        .btn-soft:hover {
+            background: #fdf1cf;
+            border-color: #e0bb5a;
+            color: #1f0d37;
+        }
+
+        .btn-success,
+        .btn.btn-success {
+            background: var(--brand-yellow);
+            border-color: var(--brand-yellow);
+            color: #2b124c;
+        }
+        .btn-success:hover,
+        .btn.btn-success:hover {
+            background: var(--brand-yellow-hover);
+            border-color: var(--brand-yellow-hover);
+            color: #1f0d37;
+        }
+
+        .form-control,
+        .form-select {
+            background: #ffffff;
+            border: 1px solid #d8d0e9;
+            color: var(--text-primary);
+        }
+        .form-control::placeholder { color: #a097b6; }
+        .form-control:focus,
+        .form-select:focus {
+            border-color: #bca8e3;
+            box-shadow: 0 0 0 3px rgba(94, 58, 161, 0.12);
+            color: var(--text-primary);
+            background: #ffffff;
+        }
+        .form-select option { background: #ffffff; color: var(--text-primary); }
+
+        .table-dark-surface,
+        .table-dark-surface thead th {
+            --bs-table-bg: #ffffff;
+            --bs-table-color: #1f1b2d;
+            --bs-table-border-color: #e6e1f3;
+            color: #1f1b2d;
+        }
+        .table-dark-surface td,
+        .table-dark-surface th,
+        .text-white,
+        .text-light,
+        .text-white-50,
+        .text-muted {
+            color: #1f1b2d !important;
+        }
+
+        .toast-notif {
+            background: #ffffff;
+            border: 1px solid var(--surface-border);
+            color: var(--text-primary);
+            box-shadow: 0 10px 24px rgba(44, 31, 79, 0.12);
+        }
+        .toast-notif.success { border-left: 4px solid #2e7d32; }
+        .toast-notif.error { border-left: 4px solid #c62828; }
+        .toast-notif.warning {
+            border-left: 4px solid var(--brand-yellow);
+            color: var(--text-primary);
+        }
+    </style>
+</head>
+<body>
+    <div class="orb-container">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+
+    <div class="page-wrapper">
+        <nav class="navbar navbar-expand-lg navbar-dark">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="dashboard.html"><i class="bi bi-mortarboard-fill me-2"></i>CCS Sit-in Monitoring</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+                    <ul class="navbar-nav align-items-lg-center gap-lg-1">
+                        <li class="nav-item"><a class="nav-link active" href="#" data-section="home"><i class="bi bi-house me-1"></i>Home</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#" data-section="edit-profile"><i class="bi bi-pencil-square me-1"></i>Edit Profile</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#" data-section="history"><i class="bi bi-clock-history me-1"></i>History</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#" data-section="rewards"><i class="bi bi-trophy me-1"></i>Rewards</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#" data-section="notifications"><i class="bi bi-bell me-1"></i>Notifications</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#" data-section="reservation"><i class="bi bi-journal-bookmark me-1"></i>Reservation</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#" data-section="reservation-status"><i class="bi bi-inbox me-1"></i>Reservation Status</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#" data-section="feedback"><i class="bi bi-chat-left-text me-1"></i>Feedback</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#" id="logoutLink"><i class="bi bi-box-arrow-right me-1"></i>Logout</a></li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+
+        <div class="toast-container-custom" id="toastContainer"></div>
+
+        <main class="dashboard-shell container-fluid">
+            <section class="section-panel active" data-panel="home">
+                <div class="hero-grid">
+                    <div class="glass-card hero-card">
+                        <div class="hero-badge"><i class="bi bi-stars"></i> Student Dashboard</div>
+                        <h1 class="hero-title" id="homeTitle">Welcome back!</h1>
+                        <p class="hero-subtitle" id="homeSubtitle">Manage your profile, review announcements, and prepare your next lab reservation from a single student dashboard.</p>
+
+                        <div class="hero-actions">
+                            <button class="btn btn-primary-gradient" data-section-jump="edit-profile"><i class="bi bi-pencil-square me-1"></i>Edit Profile</button>
+                            <button class="btn btn-outline-soft" data-section-jump="reservation"><i class="bi bi-calendar2-check me-1"></i>Reserve Lab</button>
+                            <button class="btn btn-outline-soft" data-section-jump="history"><i class="bi bi-clock-history me-1"></i>View History</button>
+                        </div>
+
+                        <div class="stats-grid">
+                            <div class="stat-box">
+                                <div class="stat-number" id="statSessions">0</div>
+                                <div class="stat-label">Active Sessions</div>
+                            </div>
+                            <div class="stat-box">
+                                <div class="stat-number" id="statReservations">0</div>
+                                <div class="stat-label">Reservations</div>
+                            </div>
+                            <div class="stat-box">
+                                <div class="stat-number" id="statProfile">100%</div>
+                                <div class="stat-label">Remaining Sessions</div>
+                            </div>
+                            <div class="stat-box">
+                                <div class="stat-number" id="statPhoto">0</div>
+                                <div class="stat-label">Reward Points</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="glass-card profile-summary-card">
+                        <div class="d-flex align-items-center gap-3">
+                            <img src="assets/ccs-logo.png" alt="Student Profile Photo" class="profile-photo" id="summaryPhoto">
+                            <div>
+                                <div class="profile-name" id="summaryName">Student Name</div>
+                                <div class="profile-meta" id="summaryMeta">ID Number</div>
+                                <div class="profile-meta" id="summaryCourse">Course</div>
+                            </div>
+                        </div>
+                        <div class="glass-card p-3" style="background: rgba(255,255,255,0.04); border-radius: 16px; border: 1px solid rgba(255,255,255,0.08);">
+                            <div class="section-title mb-2"><i class="bi bi-info-circle"></i> Student Information</div>
+                            <div class="profile-meta" id="summaryEmail"></div>
+                            <div class="profile-meta" id="summaryAddress"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="content-grid">
+                    <div class="glass-card content-card">
+                        <div class="section-title"><i class="bi bi-megaphone"></i> Announcement</div>
+                        <div class="scroll-pane" id="announcementList">
+                            <div class="announcement-empty">Loading announcements...</div>
+                        </div>
+                    </div>
+
+                    <div class="glass-card content-card">
+                        <div class="section-title"><i class="bi bi-journal-text"></i> Rules and Regulation</div>
+                        <div class="scroll-pane">
+                            <ul class="rules-list ps-3 mb-0">
+                                <li>Maintain silence, proper decorum, and discipline inside the laboratory.</li>
+                                <li>Mobile phones, drinks, and food are not allowed while inside the lab.</li>
+                                <li>Follow all instructions from the instructor or lab administrator.</li>
+                                <li>Use computer-related games and other distracting activities are prohibited.</li>
+                                <li>Always log your session properly before leaving the laboratory.</li>
+                                <li>Keep your profile information updated so the student record stays accurate.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section-panel" data-panel="edit-profile">
+                <div class="glass-card form-shell">
+                    <div class="glass-card avatar-card">
+                        <div class="avatar-frame">
+                            <img src="assets/ccs-logo.png" alt="Profile Photo" id="profilePhotoPreview">
+                        </div>
+                        <h3 class="h5 fw-bold mb-1" id="avatarName">Student Profile</h3>
+                        <div class="small-note" id="avatarInfo">Upload or capture an image to update your profile picture.</div>
+
+                        <div class="upload-actions">
+                            <label class="btn btn-primary-gradient mb-0" for="photoUpload"><i class="bi bi-upload me-1"></i>Upload Image</label>
+                            <button class="btn btn-outline-soft" type="button" id="takePhotoBtn"><i class="bi bi-camera me-1"></i>Take Photo</button>
+                            <input type="file" id="photoUpload" accept="image/*" class="d-none">
+                        </div>
+
+                        <p class="small-note mt-3 mb-0">On phones and tablets, the take photo button opens the camera when your browser supports image capture.</p>
+                    </div>
+
+                    <div class="glass-card form-card">
+                        <div class="section-title"><i class="bi bi-pencil-square"></i> Edit Profile</div>
+                        <div class="preview-row">
+                            <img src="assets/ccs-logo.png" alt="Preview" class="preview-thumb" id="miniPreview">
+                            <div>
+                                <div class="fw-semibold" id="previewName">Student Name</div>
+                                <div class="field-hint">Your changes are saved in the browser for this prototype.</div>
+                            </div>
+                        </div>
+
+                        <form id="profileForm" novalidate>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label" for="profileIdNumber">ID Number</label>
+                                    <input type="text" id="profileIdNumber" class="form-control" readonly>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label" for="profileEmail">Email</label>
+                                    <input type="email" id="profileEmail" class="form-control" placeholder="email@example.com">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label" for="profileLastName">Last Name</label>
+                                    <input type="text" id="profileLastName" class="form-control" placeholder="Last Name">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label" for="profileFirstName">First Name</label>
+                                    <input type="text" id="profileFirstName" class="form-control" placeholder="First Name">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label" for="profileMiddleName">Middle Name</label>
+                                    <input type="text" id="profileMiddleName" class="form-control" placeholder="Middle Name">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label" for="profileCourse">Course</label>
+                                    <select id="profileCourse" class="form-select">
+                                        <option value="BSIT">BSIT</option>
+                                        <option value="BSCS">BSCS</option>
+                                        <option value="BSIS">BSIS</option>
+                                        <option value="ACT">ACT</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label" for="profileYearLevel">Year Level</label>
+                                    <select id="profileYearLevel" class="form-select">
+                                        <option value="1">1st Year</option>
+                                        <option value="2">2nd Year</option>
+                                        <option value="3">3rd Year</option>
+                                        <option value="4">4th Year</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label" for="profileAddress">Address</label>
+                                    <input type="text" id="profileAddress" class="form-control" placeholder="Home address">
+                                </div>
+                                <div class="col-12">
+                                    <div class="d-flex flex-wrap gap-2 mt-1">
+                                        <button type="submit" class="btn btn-primary-gradient"><i class="bi bi-save me-1"></i>Save Profile</button>
+                                        <button type="button" class="btn btn-outline-soft" id="resetProfileBtn"><i class="bi bi-arrow-counterclockwise me-1"></i>Reset</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section-panel" data-panel="history">
+                <div class="glass-card history-card">
+                    <div class="section-title"><i class="bi bi-clock-history"></i> History Information</div>
+                    <div class="table-responsive">
+                        <table class="table table-dark-surface align-middle">
+                            <thead>
+                                <tr>
+                                    <th>ID Number</th>
+                                    <th>Purpose</th>
+                                    <th>Laboratory</th>
+                                    <th>Time In</th>
+                                    <th>Time Out</th>
+                                    <th>Duration</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="historyBody">
+                                <tr>
+                                    <td colspan="7" class="text-center py-4 text-white-50">No session history available yet.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section-panel" data-panel="rewards">
+                <div class="content-grid">
+                    <div class="glass-card content-card">
+                        <div class="section-title"><i class="bi bi-trophy"></i>Reward Summary</div>
+                        <div class="stats-grid" style="grid-template-columns: repeat(2, minmax(0, 1fr));">
+                            <div class="stat-box">
+                                <div class="stat-number" id="rewardTotalPoints">0</div>
+                                <div class="stat-label">Total Points</div>
+                            </div>
+                            <div class="stat-box">
+                                <div class="stat-number" id="rewardRank">-</div>
+                                <div class="stat-label">Current Rank</div>
+                            </div>
+                        </div>
+                        <div class="empty-note mt-3">Points are awarded when your sit-in session is completed.</div>
+                    </div>
+
+                    <div class="glass-card content-card">
+                        <div class="section-title"><i class="bi bi-clock-history"></i>Recent Reward Activity</div>
+                        <div class="table-responsive">
+                            <table class="table table-dark-surface align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Description</th>
+                                        <th>Points</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="rewardHistoryBody">
+                                    <tr><td colspan="3" class="text-center py-4 text-white-50">Loading reward history...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section-panel" data-panel="notifications">
+                <div class="glass-card content-card">
+                    <div class="section-title"><i class="bi bi-bell"></i>Notification Center</div>
+                    <div class="empty-note mb-3">Recent alerts are collected from announcements, reservations, feedback, and reward updates.</div>
+                    <div class="scroll-pane" id="notificationList" style="max-height: 420px;">
+                        <div class="announcement-empty">Loading notifications...</div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section-panel" data-panel="reservation">
+                <div class="glass-card reservation-card">
+                    <div class="section-title"><i class="bi bi-journal-bookmark"></i> Reservation</div>
+                    <div class="row g-4 align-items-center">
+                        <div class="col-lg-7">
+                            <form id="reservationForm" class="row g-3" novalidate>
+                                <div class="col-md-6">
+                                    <label class="form-label" for="reservationIdNumber">ID Number</label>
+                                    <input type="text" id="reservationIdNumber" class="form-control" readonly>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label" for="reservationName">Student Name</label>
+                                    <input type="text" id="reservationName" class="form-control" readonly>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label" for="reservationPurpose">Purpose / Language</label>
+                                    <select id="reservationPurpose" class="form-select" required>
+                                        <option value="">Select language/use</option>
+                                        <option value="C Programming">C Programming</option>
+                                        <option value="Java">Java</option>
+                                        <option value="Python">Python</option>
+                                        <option value="Web Development">Web Development</option>
+                                        <option value="Database">Database</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label" for="reservationLab">Lab</label>
+                                    <select id="reservationLab" class="form-select" required>
+                                        <option value="">Select a lab</option>
+                                        <option value="S1">S1</option>
+                                        <option value="S2">S2</option>
+                                        <option value="S3">S3</option>
+                                        <option value="S4">S4</option>
+                                        <option value="S5">S5</option>
+                                        <option value="S6">S6</option>
+                                        <option value="S7">S7</option>
+                                        <option value="S8">S8</option>
+                                        <option value="S9">S9</option>
+                                        <option value="S10">S10</option>
+                                        <option value="S11">S11</option>
+                                        <option value="S12">S12</option>
+                                        <option value="S13">S13</option>
+                                        <option value="S14">S14</option>
+                                        <option value="S15">S15</option>
+                                        <option value="S16">S16</option>
+                                        <option value="S17">S17</option>
+                                        <option value="S18">S18</option>
+                                        <option value="S19">S19</option>
+                                        <option value="S20">S20</option>
+                                        <option value="S21">S21</option>
+                                        <option value="S22">S22</option>
+                                        <option value="S23">S23</option>
+                                        <option value="S24">S24</option>
+                                        <option value="S25">S25</option>
+                                        <option value="S26">S26</option>
+                                        <option value="S27">S27</option>
+                                        <option value="S28">S28</option>
+                                        <option value="S29">S29</option>
+                                        <option value="S30">S30</option>
+                                        <option value="S31">S31</option>
+                                        <option value="S32">S32</option>
+                                        <option value="S33">S33</option>
+                                        <option value="S34">S34</option>
+                                        <option value="S35">S35</option>
+                                        <option value="S36">S36</option>
+                                        <option value="S37">S37</option>
+                                        <option value="S38">S38</option>
+                                        <option value="S39">S39</option>
+                                        <option value="S40">S40</option>
+                                        <option value="S41">S41</option>
+                                        <option value="S42">S42</option>
+                                        <option value="S43">S43</option>
+                                        <option value="S44">S44</option>
+                                        <option value="S45">S45</option>
+                                        <option value="S46">S46</option>
+                                        <option value="S47">S47</option>
+                                        <option value="S48">S48</option>
+                                        <option value="S49">S49</option>
+                                        <option value="S50">S50</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label" for="reservationTime">Time In</label>
+                                    <input type="time" id="reservationTime" class="form-control">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label" for="reservationDate">Date</label>
+                                    <input type="date" id="reservationDate" class="form-control">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label" for="reservationSessions">Remaining Sessions</label>
+                                    <input type="number" id="reservationSessions" class="form-control" value="30" readonly>
+                                </div>
+                                <div class="col-12">
+                                    <button type="submit" class="btn btn-primary-gradient"><i class="bi bi-check2-circle me-1"></i>Reserve</button>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="col-lg-5">
+                            <div class="glass-card p-4" style="background: rgba(255,255,255,0.04); border-radius: 16px; border: 1px solid rgba(255,255,255,0.08);">
+                                <div class="section-title mb-3"><i class="bi bi-lightbulb"></i> Reservation Notes</div>
+                                <ul class="rules-list ps-3 mb-0">
+                                    <li>Select the programming language or use you will work on before reserving.</li>
+                                    <li>Choose the laboratory, date, and time so the reservation record is complete.</li>
+                                    <li>Reservation data is stored locally in this prototype.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section-panel" data-panel="reservation-status">
+                <div class="glass-card history-card">
+                    <div class="section-title"><i class="bi bi-inbox"></i> Reservation Status</div>
+                    <div class="table-responsive">
+                        <table class="table table-dark-surface align-middle">
+                            <thead>
+                                <tr>
+                                    <th>ID Number</th>
+                                    <th>Lab</th>
+                                    <th>Purpose</th>
+                                    <th>Preferred Date</th>
+                                    <th>Preferred Time</th>
+                                    <th>Status</th>
+                                    <th>Created</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reservationStatusBody">
+                                <tr>
+                                    <td colspan="7" class="text-center py-4 text-white-50">No reservation requests available yet.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section-panel" data-panel="feedback">
+                <div class="glass-card content-card">
+                    <div class="section-title"><i class="bi bi-chat-left-text"></i> Feedback</div>
+                    <div class="row g-4">
+                        <div class="col-lg-6">
+                            <form id="feedbackForm" class="row g-3" novalidate>
+                                <div class="col-12">
+                                    <label class="form-label" for="feedbackSubject">Subject</label>
+                                    <input type="text" id="feedbackSubject" class="form-control" placeholder="e.g. Lab experience" required>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label" for="feedbackMessage">Message</label>
+                                    <textarea id="feedbackMessage" class="form-control" rows="6" placeholder="Write your feedback here" required></textarea>
+                                </div>
+                                <div class="col-12">
+                                    <button type="submit" class="btn btn-primary-gradient"><i class="bi bi-send me-1"></i>Submit Feedback</button>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="col-lg-6">
+                            <div class="glass-card p-4" style="background: rgba(255,255,255,0.04); border-radius: 16px; border: 1px solid rgba(255,255,255,0.08);">
+                                <div class="section-title mb-3"><i class="bi bi-clock-history"></i>My Feedback</div>
+                                <div class="scroll-pane" id="feedbackList">
+                                    <div class="feedback-empty">Loading feedback...</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <div class="camera-overlay" id="cameraOverlay" aria-hidden="true">
+        <div class="camera-card">
+            <div class="d-flex align-items-center justify-content-between gap-3 mb-3">
+                <div>
+                    <h2 class="h5 fw-bold mb-1">Take Photo</h2>
+                    <div class="small-note mb-0">Allow camera access, then capture your profile picture.</div>
+                </div>
+                <button type="button" class="btn btn-outline-soft" id="closeCameraBtn"><i class="bi bi-x-lg me-1"></i>Close</button>
+            </div>
+            <video id="cameraVideo" class="camera-preview mb-3" autoplay playsinline></video>
+            <canvas id="cameraCanvas" class="d-none"></canvas>
+            <div class="d-flex flex-wrap gap-2 justify-content-end">
+                <button type="button" class="btn btn-outline-soft" id="switchCameraBtn"><i class="bi bi-arrow-repeat me-1"></i>Switch Camera</button>
+                <button type="button" class="btn btn-primary-gradient" id="captureBtn"><i class="bi bi-camera-fill me-1"></i>Capture</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const API_BASE = 'backend/api/index.php';
+        const USER_KEY = 'ccs_user';
+        const PROFILE_KEY = 'ccs_student_profile';
+
+        function buildProfileStorageKey(idNumber) {
+            return `${PROFILE_KEY}_${String(idNumber || 'guest').trim()}`;
+        }
+
+        function buildFallbackAvatar(seed, name) {
+            const source = String(seed || name || 'student');
+            let hash = 0;
+            for (let index = 0; index < source.length; index += 1) {
+                hash = ((hash << 5) - hash) + source.charCodeAt(index);
+                hash |= 0;
+            }
+
+            const hue = Math.abs(hash) % 360;
+            const hue2 = (hue + 28) % 360;
+            const labelSource = String(name || source).trim().split(/\s+/).filter(Boolean);
+            const firstInitial = (labelSource[0] || source).charAt(0).toUpperCase() || 'S';
+            const secondInitial = (labelSource[1] || source).charAt(0).toUpperCase() || '';
+            const label = `${firstInitial}${secondInitial}`.trim() || 'S';
+
+            const svg = `
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="Student avatar">
+                    <defs>
+                        <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="hsl(${hue}, 75%, 58%)" />
+                            <stop offset="100%" stop-color="hsl(${hue2}, 72%, 42%)" />
+                        </linearGradient>
+                    </defs>
+                    <rect width="256" height="256" rx="128" fill="url(#g)" />
+                    <circle cx="88" cy="96" r="28" fill="rgba(255,255,255,0.16)" />
+                    <circle cx="168" cy="88" r="18" fill="rgba(255,255,255,0.12)" />
+                    <text x="128" y="150" text-anchor="middle" fill="#ffffff" font-family="Segoe UI, Arial, sans-serif" font-size="92" font-weight="700" letter-spacing="2">${label}</text>
+                </svg>
+            `;
+
+            return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg.trim())}`;
+        }
+        const userData = localStorage.getItem(USER_KEY);
+        if (!userData) {
+            window.location.href = 'login.html';
+        }
+
+        const baseUser = userData ? JSON.parse(userData) : {};
+        if (baseUser && baseUser.role === 'admin') {
+            window.location.href = 'admin-dashboard.html';
+        }
+        const profileStorageKey = buildProfileStorageKey(baseUser.id_number);
+        const legacyProfile = JSON.parse(localStorage.getItem(PROFILE_KEY) || 'null') || {};
+        const savedProfile = JSON.parse(localStorage.getItem(profileStorageKey) || 'null') || (legacyProfile.id_number === baseUser.id_number ? legacyProfile : {});
+        const profile = {
+            id_number: baseUser.id_number || '00-0000',
+            last_name: baseUser.last_name || 'Student',
+            first_name: baseUser.first_name || 'Student',
+            middle_name: baseUser.middle_name || '',
+            course: baseUser.course || 'BSIT',
+            year_level: String(baseUser.year_level || '1'),
+            email: baseUser.email || 'student@example.com',
+            address: baseUser.address || '',
+            remaining_sessions: Number(baseUser.remaining_sessions ?? 30),
+            reward_points: Number(baseUser.reward_points ?? savedProfile.reward_points ?? 0),
+            photo: savedProfile.photo || buildFallbackAvatar(baseUser.id_number, `${baseUser.first_name || ''} ${baseUser.last_name || ''}`)
+        };
+        const defaultProfilePhoto = profile.photo;
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const icons = {
+                success: 'bi-check-circle-fill',
+                error: 'bi-x-circle-fill',
+                warning: 'bi-exclamation-triangle-fill'
+            };
+            const toast = document.createElement('div');
+            toast.className = `toast-notif ${type}`;
+            toast.innerHTML = `<i class="bi ${icons[type] || icons.success} toast-icon"></i><span>${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.animation = 'toastOut 0.35s forwards';
+                setTimeout(() => toast.remove(), 350);
+            }, 3200);
+        }
+
+        async function apiGet(action, query = '') {
+            const url = `${API_BASE}?action=${encodeURIComponent(action)}${query ? `&${query}` : ''}`;
+            const response = await fetch(url);
+            return await response.json();
+        }
+
+        async function apiPost(action, payload) {
+            const response = await fetch(`${API_BASE}?action=${encodeURIComponent(action)}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            return await response.json();
+        }
+
+        function fullName(data = profile) {
+            return [data.first_name, data.middle_name, data.last_name].filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
+        }
+
+        function updateProfilePhoto(source) {
+            const mainPhoto = document.getElementById('profilePhotoPreview');
+            const miniPhoto = document.getElementById('miniPreview');
+            const summaryPhoto = document.getElementById('summaryPhoto');
+            [mainPhoto, miniPhoto, summaryPhoto].forEach(img => {
+                if (img) img.src = source;
+            });
+        }
+
+        function fillProfileForm() {
+            document.getElementById('profileIdNumber').value = profile.id_number;
+            document.getElementById('profileEmail').value = profile.email;
+            document.getElementById('profileLastName').value = profile.last_name;
+            document.getElementById('profileFirstName').value = profile.first_name;
+            document.getElementById('profileMiddleName').value = profile.middle_name;
+            document.getElementById('profileCourse').value = profile.course;
+            document.getElementById('profileYearLevel').value = profile.year_level;
+            document.getElementById('profileAddress').value = profile.address;
+
+            document.getElementById('reservationIdNumber').value = profile.id_number;
+            document.getElementById('reservationName').value = fullName();
+            document.getElementById('reservationDate').value = new Date().toISOString().slice(0, 10);
+
+            document.getElementById('homeTitle').textContent = `Welcome back, ${profile.first_name}!`;
+            document.getElementById('homeSubtitle').textContent = `You are signed in as ${fullName()} from ${profile.course} Year ${profile.year_level}. Update your profile photo, edit your details, or reserve a laboratory slot from this dashboard.`;
+            document.getElementById('summaryName').textContent = fullName();
+            document.getElementById('summaryMeta').textContent = `ID Number: ${profile.id_number}`;
+            document.getElementById('summaryCourse').textContent = `${profile.course} - Year ${profile.year_level}`;
+            document.getElementById('summaryEmail').textContent = `Email: ${profile.email}`;
+            document.getElementById('summaryAddress').textContent = `Address: ${profile.address || 'Not provided'}`;
+            document.getElementById('avatarName').textContent = fullName();
+            document.getElementById('avatarInfo').textContent = `${profile.course} - Year ${profile.year_level}`;
+            document.getElementById('previewName').textContent = fullName();
+            document.getElementById('statProfile').textContent = `${profile.remaining_sessions}`;
+            document.getElementById('statPhoto').textContent = `${profile.reward_points}`;
+            const remainingLabel = document.querySelector('[data-remaining-label]');
+            if (remainingLabel) {
+                remainingLabel.textContent = 'Remaining Sessions';
+            }
+            document.getElementById('reservationSessions').value = profile.remaining_sessions;
+            updateProfilePhoto(profile.photo);
+        }
+
+        function setActiveSection(sectionName) {
+            document.querySelectorAll('.section-panel').forEach(panel => {
+                panel.classList.toggle('active', panel.dataset.panel === sectionName);
+            });
+            document.querySelectorAll('[data-section]').forEach(link => {
+                link.classList.toggle('active', link.dataset.section === sectionName);
+            });
+        }
+
+        function bindSectionLinks() {
+            document.querySelectorAll('[data-section]').forEach(link => {
+                link.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    setActiveSection(this.dataset.section);
+                });
+            });
+            document.querySelectorAll('[data-section-jump]').forEach(button => {
+                button.addEventListener('click', function () {
+                    setActiveSection(this.dataset.sectionJump);
+                });
+            });
+        }
+
+        function renderReservationStatus(reservations) {
+            const tbody = document.getElementById('reservationStatusBody');
+            if (!tbody) return;
+
+            if (!reservations.length) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-white-50">No reservation requests available yet.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = reservations.map(item => {
+                const statusBadge = item.status === 'approved'
+                    ? '<span class="badge text-bg-success">Approved</span>'
+                    : item.status === 'rejected'
+                        ? '<span class="badge text-bg-danger">Rejected</span>'
+                        : '<span class="badge text-bg-warning">Pending</span>';
+
+                return `
+                    <tr>
+                        <td>${profile.id_number}</td>
+                        <td>${item.lab_room || ''}</td>
+                        <td>${item.purpose || ''}</td>
+                        <td>${item.preferred_date || '-'}</td>
+                        <td>${item.preferred_time || '-'}</td>
+                        <td>${statusBadge}</td>
+                        <td>${item.created_at ? new Date(item.created_at).toLocaleString() : '-'}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function renderAnnouncements(announcements) {
+            const container = document.getElementById('announcementList');
+            if (!container) return;
+
+            if (!announcements.length) {
+                container.innerHTML = '<div class="announcement-empty">No announcements are available right now.</div>';
+                return;
+            }
+
+            container.innerHTML = announcements.map(item => {
+                const createdAt = item.created_at ? new Date(item.created_at).toLocaleDateString() : 'Today';
+                const icon = item.audience === 'all' ? 'bi-people' : item.audience === 'admin' ? 'bi-shield-lock' : 'bi-bell';
+                return `
+                    <div class="announcement-item">
+                        <div class="announcement-chip"><i class="bi ${icon}"></i> ${escapeHtml(item.posted_by || 'CCS Admin')} | ${escapeHtml(createdAt)}</div>
+                        <div class="fw-semibold mb-1">${escapeHtml(item.title || 'Announcement')}</div>
+                        <div>${escapeHtml(item.body || '')}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderFeedbacks(feedbacks) {
+            const container = document.getElementById('feedbackList');
+            if (!container) return;
+
+            if (!feedbacks.length) {
+                container.innerHTML = '<div class="feedback-empty">No feedback submitted yet.</div>';
+                return;
+            }
+
+            container.innerHTML = feedbacks.map(item => {
+                const createdAt = item.created_at ? new Date(item.created_at).toLocaleString() : 'Today';
+                const statusLabel = item.status === 'reviewed' ? 'Reviewed' : 'New';
+                const statusClass = item.status === 'reviewed' ? 'text-bg-success' : 'text-bg-warning';
+                return `
+                    <div class="feedback-item">
+                        <div class="feedback-chip"><i class="bi bi-chat-dots"></i> ${escapeHtml(item.subject || 'Feedback')} | ${escapeHtml(createdAt)}</div>
+                        <div class="mb-2">${escapeHtml(item.message || '')}</div>
+                        <span class="badge ${statusClass}">${statusLabel}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderRewardHistory(rewards) {
+            const tbody = document.getElementById('rewardHistoryBody');
+            if (!tbody) return;
+
+            if (!rewards.length) {
+                tbody.innerHTML = '<tr><td colspan="3" class="text-center py-4 text-white-50">No reward history available yet.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = rewards.map(item => `
+                <tr>
+                    <td>${item.created_at ? new Date(item.created_at).toLocaleString() : '-'}</td>
+                    <td>${escapeHtml(item.description || 'Reward')}</td>
+                    <td>${item.points ?? 0}</td>
+                </tr>
+            `).join('');
+        }
+
+        function renderNotifications(notifications) {
+            const container = document.getElementById('notificationList');
+            if (!container) return;
+
+            if (!notifications.length) {
+                container.innerHTML = '<div class="announcement-empty">No notifications yet.</div>';
+                return;
+            }
+
+            const icons = {
+                announcement: 'bi-megaphone',
+                reservation: 'bi-inbox',
+                feedback: 'bi-chat-left-text',
+                reward: 'bi-trophy'
+            };
+
+            const labels = {
+                info: 'text-bg-info',
+                pending: 'text-bg-warning',
+                approved: 'text-bg-success',
+                rejected: 'text-bg-danger',
+                new: 'text-bg-secondary',
+                reviewed: 'text-bg-success',
+                success: 'text-bg-success'
+            };
+
+            container.innerHTML = notifications.map(item => `
+                <div class="feedback-item">
+                    <div class="feedback-chip"><i class="bi ${icons[item.type] || 'bi-bell'}"></i> ${escapeHtml(item.title || 'Notification')} | ${escapeHtml(item.created_at ? new Date(item.created_at).toLocaleString() : 'Now')}</div>
+                    <div class="mb-2">${escapeHtml(item.body || '')}</div>
+                    <span class="badge ${labels[item.status] || 'text-bg-info'}">${escapeHtml(String(item.status || 'info').toUpperCase())}</span>
+                </div>
+            `).join('');
+        }
+
+        function logout() {
+            localStorage.removeItem(USER_KEY);
+            window.location.href = 'login.html';
+        }
+
+        function readImageFile(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = () => reject(new Error('Could not read image'));
+                reader.readAsDataURL(file);
+            });
+        }
+
+        document.getElementById('logoutBtn')?.addEventListener('click', logout);
+        document.getElementById('logoutLink')?.addEventListener('click', function (e) {
+            e.preventDefault();
+            logout();
+        });
+
+        document.getElementById('profileForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            profile.email = document.getElementById('profileEmail').value.trim();
+            profile.last_name = document.getElementById('profileLastName').value.trim();
+            profile.first_name = document.getElementById('profileFirstName').value.trim();
+            profile.middle_name = document.getElementById('profileMiddleName').value.trim();
+            profile.course = document.getElementById('profileCourse').value;
+            profile.year_level = document.getElementById('profileYearLevel').value;
+            profile.address = document.getElementById('profileAddress').value.trim();
+
+            localStorage.setItem(profileStorageKey, JSON.stringify(profile));
+            localStorage.setItem(USER_KEY, JSON.stringify({
+                ...baseUser,
+                ...profile
+            }));
+
+            fillProfileForm();
+            showToast('Profile updated successfully.', 'success');
+        });
+
+        document.getElementById('resetProfileBtn').addEventListener('click', function () {
+            profile.email = baseUser.email || profile.email;
+            profile.last_name = baseUser.last_name || profile.last_name;
+            profile.first_name = baseUser.first_name || profile.first_name;
+            profile.middle_name = baseUser.middle_name || '';
+            profile.course = baseUser.course || profile.course;
+            profile.year_level = String(baseUser.year_level || profile.year_level);
+            profile.address = baseUser.address || '';
+            profile.photo = defaultProfilePhoto;
+            fillProfileForm();
+            showToast('Profile reset to the saved account data.', 'warning');
+        });
+
+        document.getElementById('photoUpload').addEventListener('change', async function () {
+            const file = this.files && this.files[0];
+            if (!file) return;
+            if (!file.type.startsWith('image/')) {
+                showToast('Please select an image file.', 'error');
+                return;
+            }
+            const dataUrl = await readImageFile(file);
+            profile.photo = dataUrl;
+            localStorage.setItem(profileStorageKey, JSON.stringify(profile));
+            updateProfilePhoto(dataUrl);
+            showToast('Profile photo updated.', 'success');
+            this.value = '';
+        });
+
+        const cameraOverlay = document.getElementById('cameraOverlay');
+        const cameraVideo = document.getElementById('cameraVideo');
+        const cameraCanvas = document.getElementById('cameraCanvas');
+        const takePhotoBtn = document.getElementById('takePhotoBtn');
+        const closeCameraBtn = document.getElementById('closeCameraBtn');
+        const captureBtn = document.getElementById('captureBtn');
+        const switchCameraBtn = document.getElementById('switchCameraBtn');
+        let cameraStream = null;
+        let currentFacingMode = 'user';
+
+        async function startCamera() {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                document.getElementById('photoUpload').setAttribute('capture', 'environment');
+                document.getElementById('photoUpload').click();
+                showToast('Camera capture is not supported here. Opening image picker instead.', 'warning');
+                return;
+            }
+            try {
+                if (cameraStream) {
+                    cameraStream.getTracks().forEach(track => track.stop());
+                }
+                cameraStream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: currentFacingMode }
+                });
+                cameraVideo.srcObject = cameraStream;
+                cameraOverlay.classList.add('active');
+                cameraOverlay.setAttribute('aria-hidden', 'false');
+            } catch (error) {
+                showToast('Could not access the camera. You can upload an image instead.', 'error');
+                document.getElementById('photoUpload').setAttribute('capture', 'environment');
+                document.getElementById('photoUpload').click();
+            }
+        }
+
+        function stopCamera() {
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(track => track.stop());
+                cameraStream = null;
+            }
+            cameraVideo.srcObject = null;
+            cameraOverlay.classList.remove('active');
+            cameraOverlay.setAttribute('aria-hidden', 'true');
+        }
+
+        takePhotoBtn.addEventListener('click', startCamera);
+        closeCameraBtn.addEventListener('click', stopCamera);
+        switchCameraBtn.addEventListener('click', async function () {
+            currentFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
+            await startCamera();
+            showToast(`Switched to ${currentFacingMode === 'user' ? 'front' : 'rear'} camera.`, 'warning');
+        });
+
+        captureBtn.addEventListener('click', async function () {
+            if (!cameraStream) return;
+            const [track] = cameraStream.getVideoTracks();
+            const settings = track.getSettings();
+            cameraCanvas.width = settings.width || cameraVideo.videoWidth;
+            cameraCanvas.height = settings.height || cameraVideo.videoHeight;
+            const ctx = cameraCanvas.getContext('2d');
+            ctx.drawImage(cameraVideo, 0, 0, cameraCanvas.width, cameraCanvas.height);
+            const dataUrl = cameraCanvas.toDataURL('image/jpeg', 0.92);
+            profile.photo = dataUrl;
+            localStorage.setItem(profileStorageKey, JSON.stringify(profile));
+            updateProfilePhoto(dataUrl);
+            stopCamera();
+            showToast('Photo captured and saved.', 'success');
+        });
+
+        cameraOverlay.addEventListener('click', function (e) {
+            if (e.target === cameraOverlay) stopCamera();
+        });
+
+        async function loadStudentDashboard() {
+            try {
+                const data = await apiGet('student_dashboard', `id_number=${encodeURIComponent(profile.id_number)}`);
+                if (!data.success) {
+                    showToast(data.message || 'Failed to load student data.', 'error');
+                    return;
+                }
+
+                if (data.user) {
+                    profile.remaining_sessions = Number(data.user.remaining_sessions ?? profile.remaining_sessions ?? 0);
+                    profile.reward_points = Number(data.user.reward_points ?? profile.reward_points ?? 0);
+                    profile.email = data.user.email || profile.email;
+                    profile.last_name = data.user.last_name || profile.last_name;
+                    profile.first_name = data.user.first_name || profile.first_name;
+                    profile.middle_name = data.user.middle_name || profile.middle_name;
+                    profile.course = data.user.course || profile.course;
+                    profile.year_level = String(data.user.year_level || profile.year_level);
+                    profile.address = data.user.address || profile.address;
+                    localStorage.setItem(USER_KEY, JSON.stringify({
+                        ...baseUser,
+                        ...profile,
+                        remaining_sessions: profile.remaining_sessions
+                    }));
+                }
+
+                const activeSessions = data.active_sessions || [];
+                const history = data.history || [];
+                const reservations = data.reservations || [];
+                const announcements = data.announcements || [];
+                const feedbacks = data.feedback || [];
+                const rewards = data.rewards || [];
+                const leaderboard = data.leaderboard || [];
+                const notifications = data.notifications || [];
+
+                document.getElementById('statSessions').textContent = activeSessions.length;
+                document.getElementById('statReservations').textContent = reservations.length;
+                document.getElementById('statProfile').textContent = `${profile.remaining_sessions}`;
+                document.getElementById('statPhoto').textContent = `${profile.reward_points}`;
+                document.getElementById('reservationSessions').value = profile.remaining_sessions;
+
+                const reserveBtn = document.querySelector('#reservationForm button[type="submit"]');
+                if (reserveBtn) {
+                    reserveBtn.disabled = profile.remaining_sessions <= 0;
+                }
+
+                const tbody = document.getElementById('historyBody');
+                const combined = [...activeSessions, ...history.filter(item => item.status !== 'active')];
+                if (!combined.length) {
+                    tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-white-50">No session history available yet.</td></tr>';
+                } else {
+                    tbody.innerHTML = combined.map(item => {
+                        const statusLabel = item.status === 'active' ? '<span class="badge text-bg-success">Active</span>' : '<span class="badge text-bg-secondary">Completed</span>';
+                        const timeOut = item.time_out ? new Date(item.time_out).toLocaleString() : '-';
+                        const timeIn = item.time_in ? new Date(item.time_in).toLocaleString() : '-';
+                        const duration = item.duration_time || (item.elapsed_time ? item.elapsed_time : '-');
+                        return `
+                            <tr>
+                                <td>${profile.id_number}</td>
+                                <td>${item.purpose || ''}</td>
+                                <td>${item.lab_room || ''}</td>
+                                <td>${timeIn}</td>
+                                <td>${timeOut}</td>
+                                <td>${duration}</td>
+                                <td>${statusLabel}</td>
+                            </tr>
+                        `;
+                    }).join('');
+                }
+
+                renderReservationStatus(reservations);
+                renderAnnouncements(announcements);
+                renderFeedbacks(feedbacks);
+                renderRewardHistory(rewards);
+                renderNotifications(notifications);
+
+                document.getElementById('rewardTotalPoints').textContent = `${profile.reward_points}`;
+                const currentStudent = leaderboard.find(item => item.id_number === profile.id_number);
+                const rewardRank = currentStudent ? `#${leaderboard.findIndex(item => item.id_number === profile.id_number) + 1}` : '-';
+                document.getElementById('rewardRank').textContent = rewardRank;
+
+                fillProfileForm();
+            } catch (error) {
+                showToast('Network error while loading student dashboard.', 'error');
+            }
+        }
+
+        document.getElementById('feedbackForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const subject = document.getElementById('feedbackSubject').value.trim();
+            const message = document.getElementById('feedbackMessage').value.trim();
+
+            if (!subject || !message) {
+                showToast('Subject and message are required.', 'error');
+                return;
+            }
+
+            const data = await apiPost('submit_feedback', {
+                id_number: profile.id_number,
+                subject,
+                message
+            });
+
+            if (data.success) {
+                showToast('Feedback submitted successfully.', 'success');
+                this.reset();
+                await loadStudentDashboard();
+            } else {
+                showToast(data.message || 'Failed to submit feedback.', 'error');
+            }
+        });
+
+        document.getElementById('reservationForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+            const labRoom = document.getElementById('reservationLab').value.trim();
+            const purpose = document.getElementById('reservationPurpose').value.trim();
+            const preferredTime = document.getElementById('reservationTime').value;
+            const preferredDate = document.getElementById('reservationDate').value;
+
+            if (!labRoom || !purpose || !preferredTime || !preferredDate) {
+                showToast('Please fill in the reservation details.', 'error');
+                return;
+            }
+
+            const data = await apiPost('create_reservation', {
+                id_number: profile.id_number,
+                lab_room: labRoom,
+                purpose,
+                preferred_date: preferredDate,
+                preferred_time: preferredTime
+            });
+
+            if (data.success) {
+                showToast('Reservation submitted successfully.', 'success');
+                this.reset();
+                document.getElementById('reservationIdNumber').value = profile.id_number;
+                document.getElementById('reservationName').value = fullName();
+                document.getElementById('reservationDate').value = new Date().toISOString().slice(0, 10);
+                await loadStudentDashboard();
+            } else {
+                showToast(data.message || 'Failed to submit reservation.', 'error');
+            }
+        });
+
+        bindSectionLinks();
+        fillProfileForm();
+        loadStudentDashboard();
+        setActiveSection('home');
+        document.getElementById('statSessions').textContent = '0';
+        document.getElementById('statProfile').textContent = `${profile.remaining_sessions}`;
+        document.getElementById('statPhoto').textContent = `${profile.reward_points}`;
+    </script>
+</body>
+</html>
